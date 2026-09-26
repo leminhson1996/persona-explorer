@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { LangContext, UI, type Lang } from "./lib/i18n";
-import { localDateKey, store } from "./lib/storage";
+import { localDateKey, store, syncStatus, syncWithServer, type SyncStatus } from "./lib/storage";
 import { buildSnapshot } from "./lib/snapshot";
-import type { CheckIn, CosmosData, DiaryEntry, Meditation, Profile, Reading } from "./lib/types";
+import type { CheckIn, CosmosData, DiaryEntry, Meditation, Profile, Reading, ReadingKind } from "./lib/types";
+import { guide, useStreamingKinds } from "./lib/guideStore";
 import ProfileForm from "./components/ProfileForm";
 import CheckInCard from "./components/CheckInCard";
 import Dashboard from "./components/Dashboard";
@@ -11,11 +12,14 @@ import GuidancePanel from "./components/GuidancePanel";
 import Journal from "./components/Journal";
 import Charts from "./components/Charts";
 import Dharma from "./components/Dharma";
+import Library from "./components/Library";
 import Starfield from "./components/Starfield";
 
-type Tab = "today" | "charts" | "dharma" | "journal" | "profile";
+type Tab = "today" | "charts" | "dharma" | "library" | "journal" | "profile";
 
-const TAB_LABEL = { today: "tabToday", charts: "tabCharts", dharma: "tabDharma", journal: "tabJournal", profile: "tabProfile" } as const;
+const KIND_TAB: Record<ReadingKind, Tab> = { daily: "today", chart: "charts", dharma: "dharma" };
+
+const TAB_LABEL = { today: "tabToday", charts: "tabCharts", dharma: "tabDharma", library: "tabLibrary", journal: "tabJournal", profile: "tabProfile" } as const;
 
 const initialLang = (): Lang => store.loadLang() ?? (navigator.language.startsWith("vi") ? "vi" : "en");
 
@@ -29,7 +33,27 @@ export default function App() {
   const [tab, setTab] = useState<Tab>("today");
   const [now, setNow] = useState(() => new Date());
   const [cosmos, setCosmos] = useState<CosmosData | null | undefined>(undefined);
+  const [ready, setReady] = useState(false);
+  const [sync, setSync] = useState<SyncStatus>(syncStatus.get());
   const today = localDateKey(now);
+
+  // Load from ./my_data (via the server); the newer copy of each collection wins.
+  useEffect(() => {
+    const unsubscribe = syncStatus.subscribe(setSync);
+    syncWithServer().then((changed) => {
+      if (changed) {
+        setProfile(store.loadProfile());
+        setCheckins(store.loadCheckins());
+        setReadings(store.loadReadings());
+        setDiary(store.loadDiary());
+        setMeditations(store.loadMeditations());
+        const l = store.loadLang();
+        if (l) setLang(l);
+      }
+      setReady(true);
+    });
+    return unsubscribe;
+  }, []);
 
   // Refresh the sky every 10 minutes; planets and the Moon keep moving.
   useEffect(() => {
@@ -69,7 +93,10 @@ export default function App() {
     setCheckins(c);
     store.saveCheckins(c);
   };
+  const readingsRef = useRef(readings);
+  readingsRef.current = readings;
   const saveReadings = (r: Reading[]) => {
+    readingsRef.current = r;
     setReadings(r);
     store.saveReadings(r);
   };
@@ -82,7 +109,16 @@ export default function App() {
     setMeditations(m);
     store.saveMeditations(m);
   };
-  const upsertReading = (r: Reading) => saveReadings([...readings.filter((x) => x.id !== r.id), r]);
+  const upsertReading = (r: Reading) => {
+    const list = readingsRef.current;
+    const i = list.findIndex((x) => x.id === r.id);
+    saveReadings(i === -1 ? [...list, r] : list.map((x, j) => (j === i ? r : x)));
+  };
+  // The guide store streams readings in the background and saves through here.
+  guide.setSaver(upsertReading);
+  const streamingKinds = useStreamingKinds();
+  const streamingTabs = streamingKinds.map((k) => KIND_TAB[k]);
+
 
   const todayCheckin = [...checkins].reverse().find((c) => c.date === today);
   const todayReading = [...readings].reverse().find((r) => r.date === today && (r.kind ?? "daily") === "daily");
@@ -112,16 +148,19 @@ export default function App() {
           </div>
         </header>
 
-        {!profile ? (
+        {!ready && !profile ? (
+          <main><p className="muted center">✦</p></main>
+        ) : !profile ? (
           <main>
             <ProfileForm initial={null} onSave={(p) => saveProfile({ ...p, lang })} onboarding />
           </main>
         ) : (
           <>
             <nav className="tabs">
-              {(["today", "charts", "dharma", "journal", "profile"] as const).map((t) => (
+              {(["today", "charts", "dharma", "library", "journal", "profile"] as const).map((t) => (
                 <button key={t} className={tab === t ? "on" : ""} onClick={() => setTab(t)}>
                   {UI[TAB_LABEL[t]][lang]}
+                  {streamingTabs.includes(t) && <span className="live-dot" aria-label={UI.libWriting[lang]} />}
                 </button>
               ))}
             </nav>
@@ -153,7 +192,6 @@ export default function App() {
                       recent={recent}
                       reading={todayReading}
                       today={today}
-                      onSave={upsertReading}
                     />
                   </div>
                 </div>
@@ -171,7 +209,6 @@ export default function App() {
                     recent={recent}
                     reading={chartReading}
                     today={today}
-                    onSave={upsertReading}
                   />
                 </Charts>
               )}
@@ -194,19 +231,23 @@ export default function App() {
                     recent={recent}
                     reading={dharmaReading}
                     today={today}
-                    onSave={upsertReading}
                   />
                 </Dharma>
+              )}
+              {tab === "library" && (
+                <Library
+                  readings={readings}
+                  onContinue={(k) => setTab(KIND_TAB[k])}
+                  onDelete={(id) => saveReadings(readings.filter((r) => r.id !== id))}
+                />
               )}
               {tab === "journal" && (
                 <Journal
                   checkins={checkins}
-                  readings={readings}
                   diary={diary}
                   onSaveDiary={(e) => saveDiary([...diary.filter((x) => x.id !== e.id), e])}
                   onDeleteDiary={(id) => saveDiary(diary.filter((d) => d.id !== id))}
                   onDeleteCheckin={(id) => saveCheckins(checkins.filter((c) => c.id !== id))}
-                  onDeleteReading={(id) => saveReadings(readings.filter((r) => r.id !== id))}
                 />
               )}
               {tab === "profile" && (
@@ -221,7 +262,7 @@ export default function App() {
                     setMeditations(store.loadMeditations());
                   }}
                   onReset={() => {
-                    store.clear();
+                    void store.clear();
                     setProfile(null);
                     setCheckins([]);
                     setReadings([]);
@@ -235,7 +276,10 @@ export default function App() {
           </>
         )}
         <footer className="foot">
-          Sky: astronomy-engine · Space data: NASA Open APIs & NOAA SWPC · Guidance: Claude
+          <span className={`sync sync-${sync}`}>
+            {sync === "saved" ? "💾 my_data ✓" : sync === "syncing" ? "💾 …" : "⚠️ my_data offline: saved in browser, will retry"}
+          </span>
+          {" · "}Sky: astronomy-engine · Space data: NASA Open APIs & NOAA SWPC · Guidance: Claude
         </footer>
       </div>
     </LangContext.Provider>

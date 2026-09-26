@@ -1,16 +1,13 @@
 import { useState } from "react";
-import ReactMarkdown from "react-markdown";
 import { FEELINGS, MOODS, fmt, useT } from "../lib/i18n";
 import { localDateKey } from "../lib/storage";
-import type { CheckIn, DiaryEntry, Reading } from "../lib/types";
+import type { CheckIn, DiaryEntry } from "../lib/types";
 import DiaryComposer from "./DiaryComposer";
 
 interface Props {
   checkins: CheckIn[];
-  readings: Reading[];
   diary: DiaryEntry[];
   onDeleteCheckin: (id: string) => void;
-  onDeleteReading: (id: string) => void;
   onSaveDiary: (e: DiaryEntry) => void;
   onDeleteDiary: (id: string) => void;
 }
@@ -27,13 +24,12 @@ function streak(dates: string[]): number {
   return n;
 }
 
-export default function Journal({ checkins, readings, diary, onDeleteCheckin, onDeleteReading, onSaveDiary, onDeleteDiary }: Props) {
+export default function Journal({ checkins, diary, onDeleteCheckin, onSaveDiary, onDeleteDiary }: Props) {
   const { t, tr, lang } = useT();
-  const [open, setOpen] = useState<string | null>(null);
   const [editing, setEditing] = useState<DiaryEntry | null>(null);
   const locale = lang === "vi" ? "vi-VN" : "en-US";
 
-  const dates = [...new Set([...checkins.map((c) => c.date), ...readings.map((r) => r.date), ...diary.map((d) => d.date)])].sort().reverse();
+  const dates = [...new Set([...checkins.map((c) => c.date), ...diary.map((d) => d.date)])].sort().reverse();
   const last7 = checkins.slice(-7);
   const avg = last7.length ? last7.reduce((a, c) => a + c.energy, 0) / last7.length : null;
   const s = streak([...checkins.map((c) => c.date), ...diary.map((d) => d.date)]);
@@ -70,7 +66,6 @@ export default function Journal({ checkins, readings, diary, onDeleteCheckin, on
 
       {dates.map((date) => {
         const dayCheckins = checkins.filter((c) => c.date === date);
-        const dayReadings = readings.filter((r) => r.date === date);
         const dayDiary = diary.filter((d) => d.date === date).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
         const label = new Date(`${date}T12:00:00`).toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "long", year: "numeric" });
         return (
@@ -107,27 +102,6 @@ export default function Journal({ checkins, readings, diary, onDeleteCheckin, on
                 </div>
               );
             })}
-            {dayReadings.map((r) => (
-              <div key={r.id} className="entry-reading">
-                <p>
-                  <button className="link" onClick={() => setOpen(open === r.id ? null : r.id)}>
-                    {open === r.id ? "▾" : "▸"} ✦ {t(r.kind === "chart" ? "chartReadingLabel" : r.kind === "dharma" ? "dharmaReadingLabel" : "readingLabel")}
-                  </button>
-                  <button className="link danger-link" onClick={() => onDeleteReading(r.id)}>{t("delete")}</button>
-                </p>
-                {open === r.id && (
-                  <div className="thread">
-                    {r.messages.slice(1).map((m, i) =>
-                      m.role === "assistant" ? (
-                        <article key={i} className="msg guide"><ReactMarkdown>{m.content}</ReactMarkdown></article>
-                      ) : (
-                        <p key={i} className="msg me"><span className="who">{t("you")}</span>{m.content}</p>
-                      ),
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
           </article>
         );
       })}

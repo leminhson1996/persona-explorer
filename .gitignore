@@ -2,3 +2,7 @@ node_modules
 dist
 .env
 .DS_Store
+
+# Personal data (profile, diary, readings) — never commit
+my_data/
+universal-explorer-*.json

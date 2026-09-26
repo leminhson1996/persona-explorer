@@ -52,11 +52,14 @@ export interface ChatMsg {
   content: string;
 }
 
+export type ReadingKind = "daily" | "chart" | "dharma";
+
 export interface Reading {
   id: string;
   date: string;
   createdAt: string;
-  kind?: "daily" | "chart" | "dharma"; // missing = daily
+  kind?: ReadingKind; // missing = daily
+  status?: "streaming" | "done" | "interrupted"; // "streaming" left over after a reload means it was cut off
   /** Full API conversation; messages[0] is the auto-generated request and isn't shown. */
   messages: ChatMsg[];
 }

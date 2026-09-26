@@ -5,9 +5,37 @@ import express from "express";
 import { getCosmos } from "./nasa";
 import { buildSystemPrompt } from "./prompt";
 import { ClaudeError, describeBackend, streamClaude, type ChatTurn } from "./claude";
+import { DATA_DIR, clearAll, isDataKey, readAll, writeKey } from "./data";
 
 const app = express();
-app.use(express.json({ limit: "1mb" }));
+app.use(express.json({ limit: "20mb" }));
+
+// ---------- Personal data in ./my_data ----------
+
+app.get("/api/data", async (_req, res) => {
+  res.json(await readAll());
+});
+
+app.put("/api/data/:key", async (req, res) => {
+  const { key } = req.params;
+  const { value, updatedAt } = (req.body ?? {}) as { value?: unknown; updatedAt?: number };
+  if (!isDataKey(key) || value === undefined) {
+    res.status(400).json({ error: "Unknown key or missing value" });
+    return;
+  }
+  try {
+    await writeKey(key, value, typeof updatedAt === "number" ? updatedAt : Date.now());
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("[data]", err);
+    res.status(500).json({ error: "Couldn't write to my_data" });
+  }
+});
+
+app.delete("/api/data", async (_req, res) => {
+  await clearAll();
+  res.json({ ok: true });
+});
 
 app.get("/api/cosmos", async (req, res) => {
   const date = String(req.query.date ?? "");
@@ -69,4 +97,6 @@ if (process.env.NODE_ENV === "production") {
 }
 
 const port = Number(process.env.PORT) || 8787;
-app.listen(port, () => console.log(`✦ Universal Explorer API on http://localhost:${port} (${describeBackend()})`));
+// Localhost only by default: this server hands out your diary to whoever can reach it.
+const host = process.env.HOST || "127.0.0.1";
+app.listen(port, host, () => console.log(`✦ Universal Explorer API on http://${host}:${port} (${describeBackend()})\n  Data folder: ${DATA_DIR}`));

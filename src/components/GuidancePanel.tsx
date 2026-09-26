@@ -2,9 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { useT } from "../lib/i18n";
 import { describeCheckin, describeCosmos, describeDiary, describeProfile, describeRecent, describeSnapshot, type Snapshot } from "../lib/snapshot";
-import { uid } from "../lib/storage";
+import { guide, useGuide } from "../lib/guideStore";
 import { describeDharma } from "../lib/dharma";
-import type { ChatMsg, CheckIn, CosmosData, DiaryEntry, Meditation, Profile, Reading } from "../lib/types";
+import type { ChatMsg, CheckIn, CosmosData, DiaryEntry, Meditation, Profile, Reading, ReadingKind } from "../lib/types";
 
 const CHART_REQUEST = {
   en: `Please give me a deep reading of my Tử Vi and Bát Tự charts together (about 700–900 words, Markdown), with these sections:
@@ -47,7 +47,7 @@ const LABELS = {
 } as const;
 
 interface Props {
-  kind?: "daily" | "chart" | "dharma";
+  kind?: ReadingKind;
   diary: DiaryEntry[];
   meditations: Meditation[];
   profile: Profile;
@@ -57,81 +57,47 @@ interface Props {
   recent: CheckIn[];
   reading?: Reading;
   today: string;
-  onSave: (r: Reading) => void;
 }
 
-export default function GuidancePanel({ kind = "daily", diary, meditations, profile, snapshot, cosmos, checkin, recent, reading, today, onSave }: Props) {
+export default function GuidancePanel({ kind = "daily", diary, meditations, profile, snapshot, cosmos, checkin, recent, reading, today }: Props) {
   const { t, lang } = useT();
-  const [messages, setMessages] = useState<ChatMsg[]>(reading?.messages ?? []);
-  const [pending, setPending] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const session = useGuide(kind);
   const [input, setInput] = useState("");
-  const abortRef = useRef<AbortController | null>(null);
-  const readingId = useRef(reading?.id ?? uid());
   const endRef = useRef<HTMLDivElement>(null);
+  const scope = kind === "chart" ? "chart" : today;
 
-  // A new day brings a new reading.
+  // Attach to (or create) this kind's conversation. It lives outside the component, so it
+  // survives tab switches; a new day starts a new daily/dharma conversation.
   useEffect(() => {
-    setMessages(reading?.messages ?? []);
-    readingId.current = reading?.id ?? uid();
-  }, [today]); // eslint-disable-line react-hooks/exhaustive-deps
+    guide.ensure(kind, scope, today, reading);
+  }, [kind, scope, today, reading]);
 
-  useEffect(() => () => abortRef.current?.abort(), []);
+  // A follow-up that got no answer goes back into the input box.
+  useEffect(() => {
+    if (session?.retry) {
+      setInput(session.retry);
+      guide.clearRetry(kind);
+    }
+  }, [session?.retry, kind]);
 
+  const pending = session?.pending ?? null;
   useEffect(() => {
     if (pending !== null) endRef.current?.scrollIntoView({ block: "nearest" });
   }, [pending]);
+
+  const messages = session?.messages ?? [];
+  const busy = pending !== null;
+  const interrupted = !busy && reading && session?.readingId === reading.id && (reading.status === "streaming" || reading.status === "interrupted");
 
   const buildContext = () =>
     [describeProfile(profile), describeSnapshot(snapshot), describeCosmos(cosmos ?? null), describeRecent(recent), describeDiary(diary, today), describeDharma(snapshot.now, checkin, meditations)]
       .filter(Boolean)
       .join("\n\n");
 
-  async function send(history: ChatMsg[]) {
-    setError(null);
-    setPending("");
-    setMessages(history);
-    const ctrl = new AbortController();
-    abortRef.current = ctrl;
-    let text = "";
-    try {
-      const res = await fetch("/api/guide", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lang, context: buildContext(), messages: history }),
-        signal: ctrl.signal,
-      });
-      if (!res.ok || !res.body) {
-        const body = await res.json().catch(() => null);
-        throw new Error(body?.error ?? `HTTP ${res.status}`);
-      }
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        text += decoder.decode(value, { stream: true });
-        setPending(text);
-      }
-    } catch (err) {
-      if ((err as Error).name !== "AbortError") setError((err as Error).message);
-    } finally {
-      abortRef.current = null;
-      setPending(null);
-      if (text.trim()) {
-        const next = [...history, { role: "assistant" as const, content: text }];
-        setMessages(next);
-        onSave({ id: readingId.current, date: today, kind, createdAt: reading?.createdAt ?? new Date().toISOString(), messages: next });
-      } else {
-        // Nothing came back: roll back the unanswered message so it can be retried.
-        setMessages(history.slice(0, -1));
-        if (history.length > 1) setInput(history[history.length - 1].content);
-      }
-    }
-  }
+  const send = (history: ChatMsg[]) => void guide.send(kind, history, { lang, context: buildContext() });
 
   const requestReading = () => {
-    readingId.current = uid();
+    guide.restart(kind, today);
     if (kind === "chart") {
       send([{ role: "user", content: CHART_REQUEST[lang] }]);
       return;
@@ -147,13 +113,12 @@ export default function GuidancePanel({ kind = "daily", diary, meditations, prof
   const followUp = (e: React.FormEvent) => {
     e.preventDefault();
     const q = input.trim();
-    if (!q || pending !== null) return;
+    if (!q || busy) return;
     setInput("");
     send([...messages, { role: "user", content: q }]);
   };
 
   const visible = messages.slice(1);
-  const busy = pending !== null;
 
   return (
     <section className="card guidance">
@@ -163,7 +128,7 @@ export default function GuidancePanel({ kind = "daily", diary, meditations, prof
           <p className="muted small">{t(LABELS[kind].intro)}</p>
         </div>
         {busy ? (
-          <button className="ghost" onClick={() => abortRef.current?.abort()}>■ {t("stop")}</button>
+          <button className="ghost" onClick={() => guide.stop(kind)}>■ {t("stop")}</button>
         ) : (
           <button className="primary" onClick={requestReading}>{messages.length ? t("regenerate") : t(LABELS[kind].button)}</button>
         )}
@@ -183,7 +148,8 @@ export default function GuidancePanel({ kind = "daily", diary, meditations, prof
             {pending ? <ReactMarkdown>{pending}</ReactMarkdown> : <p className="shimmer">{t("thinking")}</p>}
           </article>
         )}
-        {error && <p className="error">⚠️ {t("errorPrefix")}: {error}</p>}
+        {interrupted && <p className="hint">⚠️ {t("interruptedNote")}</p>}
+        {session?.error && <p className="error">⚠️ {t("errorPrefix")}: {session.error}</p>}
         <div ref={endRef} />
       </div>
 

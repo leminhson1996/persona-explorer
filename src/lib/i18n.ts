@@ -23,6 +23,7 @@ export const UI = {
   tabJournal: bi("Journal", "Nhật ký"),
   tabCharts: bi("Destiny charts", "Tử Vi & Bát Tự"),
   tabDharma: bi("Buddhist path", "Phật pháp"),
+  tabLibrary: bi("Library", "Thư viện"),
 
   // Profile
   profileTitle: bi("Your profile", "Hồ sơ của bạn"),
@@ -217,6 +218,25 @@ export const UI = {
     "Claude soi chiếu những gì bạn đang trải qua qua Tứ Diệu Đế và Bát Chánh Đạo.",
   ),
   receiveDharma: bi("Receive Dharma guidance", "Nhận lời Pháp"),
+
+  // Library
+  libTitle: bi("Readings library", "Thư viện luận giải"),
+  libSearch: bi("Search all readings…", "Tìm trong tất cả luận giải…"),
+  libAll: bi("All", "Tất cả"),
+  libEmpty: bi("No readings yet. Every reading and chat you have is saved here automatically.", "Chưa có luận giải nào. Mọi lần luận giải và trò chuyện sẽ tự động được lưu ở đây."),
+  libNoMatch: bi("Nothing matches.", "Không tìm thấy."),
+  libPick: bi("Choose a reading to read it again.", "Chọn một luận giải để đọc lại."),
+  libBack: bi("Back to list", "Quay lại danh sách"),
+  libFollowUps: bi("{n} follow-ups", "{n} câu hỏi thêm"),
+  libWriting: bi("writing…", "đang viết…"),
+  libInterrupted: bi("interrupted", "bị gián đoạn"),
+  libContinue: bi("Continue this chat", "Hỏi tiếp"),
+  libCopy: bi("Copy", "Sao chép"),
+  libDeleteConfirm: bi("Delete this reading?", "Xóa luận giải này?"),
+  interruptedNote: bi(
+    "This reading was cut off (the page was reloaded or closed). What was written is saved; you can read again or ask a follow-up.",
+    "Lời luận giải này bị ngắt giữa chừng (trang bị tải lại hoặc đóng). Phần đã viết vẫn được lưu; bạn có thể luận giải lại hoặc hỏi tiếp.",
+  ),
 
   // Diary
   diaryTitle: bi("Write your diary", "Viết nhật ký"),
