@@ -13,7 +13,9 @@ It combines:
 | Tử Vi Đẩu Số | 12 palaces, Mệnh/Thân, Cục, 14 main stars, key auxiliary stars (Tả Hữu, Xương Khúc, Lộc Tồn, Kình Đà, Khôi Việt, Không Kiếp, Thiên Mã), Tứ Hóa, Mệnh chủ/Thân chủ, đại hạn, lưu niên | `src/lib/tuvi.ts` (Vietnamese school) |
 | Buddhist path (Phật pháp) | Phật lịch, Sóc/Vọng and thập trai days, upcoming Buddhist holidays (Phật Đản, Vu Lan, vía Quán Thế Âm…), mind states from your check-in (five hindrances + sorrow, with antidotes), meditation timer with bell and practice log, and Claude guidance structured by the Four Noble Truths | `src/lib/dharma.ts` |
 | Nature | Season, sunrise/sunset, daylight, next full/new moon | `astronomy-engine` |
-| Live space data | Astronomy Picture of the Day, solar flares, CMEs, geomagnetic storms, near-Earth asteroids, Kp index | NASA Open APIs (APOD, DONKI, NeoWs) + NOAA SWPC |
+| Weather & air | Temperature, feels-like/heat stress, humidity, 24h pressure change, UV (and high-UV hours), rain, US AQI and PM2.5, plus body-clock tips from real sunrise/sunset | Open-Meteo (free, no key) |
+| Sky events | Planets visible this evening and before dawn from your location, next meteor showers (with Moon brightness), next lunar/solar eclipses and the next one visible where you live | `astronomy-engine` |
+| Live space data | Astronomy Picture of the Day, solar flares, CMEs, geomagnetic storms, near-Earth asteroids, Kp index + 3-day forecast, solar wind | NASA Open APIs (APOD, DONKI, NeoWs) + NOAA SWPC |
 | **You** | Profile (birth data, life situation, goals, challenges, values), daily check-in (mood, energy, feelings, thoughts) and a free-form **diary** | You |
 
 Claude weaves all of it into a daily reading, can give a deep reading of your Tử Vi + Bát Tự charts, and you can ask follow-up questions.
@@ -25,6 +27,10 @@ Tử Vi and Bát Tự need your birth time; gender sets the direction of đại 
 Every reading and follow-up chat (daily, Tử Vi & Bát Tự, Buddhist path) is saved automatically. Open **Library (Thư viện)** to read them again. You can filter by category, search (accents optional), copy, download as Markdown, delete, or jump back with **Continue this chat**.
 
 Readings keep streaming when you switch tabs; a pulsing dot marks the tab that's still writing. Progress is saved every couple of seconds, so if the page is reloaded mid-reading, what was written stays saved and is marked as interrupted.
+
+## What actually affects you
+
+Each check-in stores that day's air quality, heat, humidity, pressure change, rain, UV, Kp, Moon brightness and day length (older check-ins are backfilled from Open-Meteo history). After 10+ days, **Journal → What actually affects you** shows how each factor correlates with *your* energy and mood. It uses a diverging bar chart, hover details and a numbers table. The reliability threshold (|r| ≥ 2.5/√n) is deliberately strict because ~9 factors are tested at once. Only reliable findings are passed to Claude, and factors with no clear link are explicitly not claimed.
 
 ## Writing your diary
 

@@ -4,6 +4,7 @@ import * as num from "./numerology";
 import * as lunar from "./lunar";
 import { computeBazi, TEN_GOD_MEANING } from "./bazi";
 import { computeTuVi } from "./tuvi";
+import { describeSkyEvents, skyEvents } from "./skyEvents";
 import { FEELINGS, MOODS } from "./i18n";
 import type { CheckIn, CosmosData, DiaryEntry, Place, Profile } from "./types";
 
@@ -92,13 +93,14 @@ export function buildSnapshot(profile: Profile, now = new Date()) {
     season: astro.season(now, place.lat),
     sun: astro.sunTimes(now, place.lat, place.lon),
   };
+  const events = skyEvents(now, place);
 
   return {
     now,
     bazi: computeBazi(profile, now),
     tuvi: computeTuVi(profile, now),
     natal: { sun: find("Sun"), moon: find("Moon"), moonCertain, asc, mercury: find("Mercury"), venus: find("Venus"), mars: find("Mars") },
-    sky, transits, moon, numbers, eastern, nature,
+    sky, transits, moon, numbers, eastern, nature, events,
   };
 }
 
@@ -153,6 +155,8 @@ export function describeSnapshot(s: Snapshot): string {
     "### Nature where they are",
     `- Location: ${s.nature.place.label ?? `${s.nature.place.lat.toFixed(2)}, ${s.nature.place.lon.toFixed(2)}`}; season: ${s.nature.season.en}`,
     s.nature.sun.daylightHours ? `- Daylight: ${s.nature.sun.daylightHours.toFixed(1)} hours` : "",
+    "",
+    describeSkyEvents(s.events),
     "",
     describeBazi(s),
     "",

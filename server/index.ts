@@ -6,6 +6,7 @@ import { getCosmos } from "./nasa";
 import { buildSystemPrompt } from "./prompt";
 import { ClaudeError, describeBackend, streamClaude, type ChatTurn } from "./claude";
 import { DATA_DIR, clearAll, isDataKey, readAll, writeKey } from "./data";
+import { getEnvironmentDaily, getEnvironmentNow } from "./environment";
 
 const app = express();
 app.use(express.json({ limit: "20mb" }));
@@ -35,6 +36,36 @@ app.put("/api/data/:key", async (req, res) => {
 app.delete("/api/data", async (_req, res) => {
   await clearAll();
   res.json({ ok: true });
+});
+
+// ---------- Local weather & air (Open-Meteo) ----------
+
+const coords = (q: Record<string, unknown>) => {
+  const lat = Number(q.lat);
+  const lon = Number(q.lon);
+  return Number.isFinite(lat) && Number.isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180 ? { lat, lon } : null;
+};
+
+app.get("/api/environment", async (req, res) => {
+  const c = coords(req.query);
+  if (!c) return void res.status(400).json({ error: "lat & lon required" });
+  try {
+    res.json(await getEnvironmentNow(c.lat, c.lon));
+  } catch (err) {
+    res.status(502).json({ error: (err as Error).message });
+  }
+});
+
+app.get("/api/environment/daily", async (req, res) => {
+  const c = coords(req.query);
+  const { start, end } = req.query as { start?: string; end?: string };
+  const iso = /^\d{4}-\d{2}-\d{2}$/;
+  if (!c || !start || !end || !iso.test(start) || !iso.test(end)) return void res.status(400).json({ error: "lat, lon, start, end required" });
+  try {
+    res.json(await getEnvironmentDaily(c.lat, c.lon, start, end));
+  } catch (err) {
+    res.status(502).json({ error: (err as Error).message });
+  }
 });
 
 app.get("/api/cosmos", async (req, res) => {

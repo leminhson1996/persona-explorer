@@ -369,3 +369,51 @@ button:disabled { opacity: 0.5; cursor: default; }
   .library:not(.has-selection) .lib-detail { display: none; }
   .lib-back { display: inline-block; }
 }
+
+/* Dashboard: NASA card spans two columns in the 3-column layout */
+.span-wide { grid-column: span 2; display: grid; min-width: 0; }
+@media (max-width: 1000px) { .span-wide { grid-column: auto; } }
+
+/* Weather & air */
+.wx-now { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; }
+.wx-emoji { font-size: 2.2rem; line-height: 1; }
+.wx-temp { font: 600 1.6rem var(--serif); }
+.lvl { font-weight: 600; }
+.lvl-good { color: var(--good); } .lvl-ok { color: var(--text); } .lvl-warn { color: var(--warn); }
+.lvl-bad, .lvl-severe { color: var(--bad); }
+.advice { margin: 10px 0 0; padding-left: 18px; display: grid; gap: 4px; }
+
+/* Insights: diverging correlation bars */
+:root { --pos: #3987e5; --neg: #e66767; --zero: #4a4d63; }
+@media (prefers-color-scheme: light) { :root { --pos: #2a78d6; --neg: #e34948; --zero: #c9c6d6; } }
+.progress-wrap { margin-top: 10px; }
+.progress-fill { background: var(--accent); }
+.corr { position: relative; display: grid; gap: 2px; margin: 12px 0 8px; }
+.corr-axis { display: grid; grid-template-columns: minmax(120px, 34%) 1fr minmax(110px, 22%); }
+.corr-axis span:first-child { grid-column: 2; text-align: left; }
+.corr-axis span:last-child { grid-column: 2; grid-row: 1; text-align: right; }
+.corr-row {
+  display: grid; grid-template-columns: minmax(120px, 34%) 1fr minmax(110px, 22%); gap: 10px; align-items: center;
+  background: none; border: 0; color: var(--text); text-align: left; padding: 6px 4px; border-radius: 8px;
+}
+.corr-row:hover, .corr-row:focus-visible { background: var(--field); outline: none; }
+.corr-track { position: relative; height: 12px; }
+.corr-zero { position: absolute; left: 50%; top: -4px; bottom: -4px; width: 1px; background: var(--zero); }
+.corr-bar { position: absolute; top: 2px; height: 8px; }
+.corr-bar.pos { background: var(--pos); border-radius: 0 4px 4px 0; }
+.corr-bar.neg { background: var(--neg); border-radius: 4px 0 0 4px; }
+.corr-row.faded .corr-bar { opacity: 0.35; }
+.corr-value { font-variant-numeric: tabular-nums; }
+.tooltip {
+  position: fixed; z-index: 10; transform: translate(-50%, calc(-100% - 12px)); pointer-events: none;
+  background: var(--bg-2); border: 1px solid var(--card-border); border-radius: 10px; padding: 8px 12px;
+  font-size: 0.8rem; max-width: 280px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+.corr-table table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-top: 8px; }
+.corr-table th, .corr-table td { padding: 4px 6px; border-bottom: 1px solid var(--card-border); text-align: right; font-variant-numeric: tabular-nums; }
+.corr-table th:first-child, .corr-table td:first-child { text-align: left; }
+@media (max-width: 560px) {
+  .corr-row, .corr-axis { grid-template-columns: 1fr 1fr; }
+  .corr-row .corr-label { grid-column: 1 / -1; }
+  .corr-axis span:first-child, .corr-axis span:last-child { grid-column: 1 / -1; }
+}

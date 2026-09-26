@@ -3,6 +3,7 @@ import { FEELINGS, MOODS, fmt, useT } from "../lib/i18n";
 import { localDateKey } from "../lib/storage";
 import type { CheckIn, DiaryEntry } from "../lib/types";
 import DiaryComposer from "./DiaryComposer";
+import Insights from "./Insights";
 
 interface Props {
   checkins: CheckIn[];
@@ -56,6 +57,7 @@ export default function Journal({ checkins, diary, onDeleteCheckin, onSaveDiary,
   return (
     <section className="journal">
       {composer}
+      <Insights checkins={checkins} />
       <div className="card stats">
         <h2>{t("journalTitle")}</h2>
         <div className="row wrap">

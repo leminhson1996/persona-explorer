@@ -2,7 +2,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { LangContext, UI, type Lang } from "./lib/i18n";
 import { localDateKey, store, syncStatus, syncWithServer, type SyncStatus } from "./lib/storage";
 import { buildSnapshot } from "./lib/snapshot";
-import type { CheckIn, CosmosData, DiaryEntry, Meditation, Profile, Reading, ReadingKind } from "./lib/types";
+import type { CheckIn, CheckInEnv, CosmosData, DiaryEntry, EnvDaily, EnvNow, Meditation, Profile, Reading, ReadingKind } from "./lib/types";
+import { sunTimes } from "./lib/astro";
+import { moonIlluminationOn } from "./lib/insights";
 import { guide, useStreamingKinds } from "./lib/guideStore";
 import ProfileForm from "./components/ProfileForm";
 import CheckInCard from "./components/CheckInCard";
@@ -33,6 +35,7 @@ export default function App() {
   const [tab, setTab] = useState<Tab>("today");
   const [now, setNow] = useState(() => new Date());
   const [cosmos, setCosmos] = useState<CosmosData | null | undefined>(undefined);
+  const [env, setEnv] = useState<EnvNow | null | undefined>(undefined);
   const [ready, setReady] = useState(false);
   const [sync, setSync] = useState<SyncStatus>(syncStatus.get());
   const today = localDateKey(now);
@@ -79,6 +82,39 @@ export default function App() {
   }, [lang]);
 
   const snapshot = useMemo(() => (profile ? buildSnapshot(profile, now) : null), [profile, now]);
+  const place = snapshot?.nature.place;
+  const placeKey = place ? `${place.lat.toFixed(2)},${place.lon.toFixed(2)}` : null;
+
+  // Local weather & air, refreshed every ~20 minutes.
+  const envSlot = Math.floor(now.getTime() / (20 * 60 * 1000));
+  useEffect(() => {
+    if (!placeKey) return;
+    let cancelled = false;
+    const [lat, lon] = placeKey.split(",");
+    fetch(`/api/environment?lat=${lat}&lon=${lon}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: EnvNow | null) => !cancelled && setEnv(d))
+      .catch(() => !cancelled && setEnv(null));
+    return () => {
+      cancelled = true;
+    };
+  }, [placeKey, envSlot]);
+
+  /** Conditions to store with today's check-in. */
+  const envForCheckin = (): CheckInEnv => ({
+    aqi: env?.air?.aqi ?? null,
+    pm25: env?.air?.pm25 ?? null,
+    tempMax: env?.today?.tempMax ?? null,
+    feelsLikeMax: env?.today?.feelsLikeMax ?? null,
+    humidity: env?.humidity ?? null,
+    pressure: env?.pressure ?? null,
+    pressureDelta24h: env?.pressureDelta24h ?? null,
+    uvMax: env?.today?.uvMax ?? null,
+    rainMm: env?.today?.rainMm ?? null,
+    kp: cosmos?.spaceWeather?.kpMax24h ?? null,
+    moonIllumination: snapshot?.moon.illumination,
+    daylightHours: snapshot?.nature.sun.daylightHours ?? null,
+  });
 
   const changeLang = (l: Lang) => {
     setLang(l);
@@ -89,7 +125,10 @@ export default function App() {
     setProfile(p);
     store.saveProfile(p);
   };
+  const checkinsRef = useRef(checkins);
+  checkinsRef.current = checkins;
   const saveCheckins = (c: CheckIn[]) => {
+    checkinsRef.current = c;
     setCheckins(c);
     store.saveCheckins(c);
   };
@@ -119,6 +158,40 @@ export default function App() {
   const streamingKinds = useStreamingKinds();
   const streamingTabs = streamingKinds.map((k) => KIND_TAB[k]);
 
+
+  // Backfill conditions for older check-ins that have none (weather history from Open-Meteo).
+  const backfilled = useRef(false);
+  useEffect(() => {
+    if (!ready || !placeKey || backfilled.current) return;
+    const cutoff = localDateKey(new Date(Date.now() - 90 * 86400000));
+    const missing = checkins.filter((c) => c.env?.humidity == null && c.date >= cutoff && c.date < today);
+    backfilled.current = true;
+    if (!missing.length) return;
+    const dates = missing.map((c) => c.date).sort();
+    const [lat, lon] = placeKey.split(",");
+    fetch(`/api/environment/daily?lat=${lat}&lon=${lon}&start=${dates[0]}&end=${dates[dates.length - 1]}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((rows: EnvDaily[] | null) => {
+        if (!rows) return;
+        const byDate = new Map(rows.map((r) => [r.date, r]));
+        const next = checkinsRef.current.map((c) => {
+          const d = byDate.get(c.date);
+          if (!d || c.env?.humidity != null) return c;
+          const sun = sunTimes(new Date(`${c.date}T12:00:00`), Number(lat), Number(lon));
+          return {
+            ...c,
+            env: {
+              ...c.env,
+              aqi: d.aqi, pm25: d.pm25, tempMax: d.tempMax, feelsLikeMax: d.feelsLikeMax, humidity: d.humidity,
+              pressure: d.pressure, pressureDelta24h: d.pressureDelta24h, uvMax: d.uvMax, rainMm: d.rainMm,
+              moonIllumination: moonIlluminationOn(c.date), daylightHours: sun.daylightHours,
+            },
+          };
+        });
+        saveCheckins(next);
+      })
+      .catch(() => {});
+  }, [ready, placeKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const todayCheckin = [...checkins].reverse().find((c) => c.date === today);
   const todayReading = [...readings].reverse().find((r) => r.date === today && (r.kind ?? "daily") === "daily");
@@ -167,7 +240,7 @@ export default function App() {
             <main>
               {tab === "today" && snapshot && (
                 <div className="today">
-                  <Dashboard s={snapshot}>
+                  <Dashboard s={snapshot} env={env}>
                     <CosmosCard data={cosmos} />
                   </Dashboard>
                   <div className="today-cols">
@@ -175,7 +248,7 @@ export default function App() {
                       <CheckInCard
                         existing={todayCheckin}
                         today={today}
-                        onSave={(c) => saveCheckins([...checkins.filter((x) => x.id !== c.id), c])}
+                        onSave={(c) => saveCheckins([...checkins.filter((x) => x.id !== c.id), { ...c, env: envForCheckin() }])}
                       />
                       <button className="card diary-link" onClick={() => setTab("journal")}>
                         <span>{UI.writeDiary[lang]}</span>
@@ -188,6 +261,8 @@ export default function App() {
                       profile={profile}
                       snapshot={snapshot}
                       cosmos={cosmos}
+                      env={env}
+                      allCheckins={checkins}
                       checkin={todayCheckin}
                       recent={recent}
                       reading={todayReading}
@@ -205,6 +280,8 @@ export default function App() {
                     profile={profile}
                     snapshot={snapshot}
                     cosmos={cosmos}
+                    env={env}
+                    allCheckins={checkins}
                     checkin={todayCheckin}
                     recent={recent}
                     reading={chartReading}
@@ -227,6 +304,8 @@ export default function App() {
                     profile={profile}
                     snapshot={snapshot}
                     cosmos={cosmos}
+                    env={env}
+                    allCheckins={checkins}
                     checkin={todayCheckin}
                     recent={recent}
                     reading={dharmaReading}

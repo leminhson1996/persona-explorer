@@ -5,11 +5,14 @@ import { ELEMENT_EN } from "../lib/lunar";
 import { NUMBER_MEANING, PERSONAL_YEAR_THEME } from "../lib/numerology";
 import type { Snapshot } from "../lib/snapshot";
 import MoonGlyph from "./MoonGlyph";
+import { EnvironmentCard, SkyEventsCard } from "./EarthCards";
+import { circadianTips } from "../lib/environment";
+import type { EnvNow } from "../lib/types";
 
 const time = (d: Date | null, lang: string) =>
   d ? d.toLocaleTimeString(lang === "vi" ? "vi-VN" : "en-US", { hour: "2-digit", minute: "2-digit" }) : "—";
 
-export default function Dashboard({ s, children }: { s: Snapshot; children?: ReactNode }) {
+export default function Dashboard({ s, env, children }: { s: Snapshot; env: EnvNow | null | undefined; children?: ReactNode }) {
   const { t, tr, lang } = useT();
   const locale = lang === "vi" ? "vi-VN" : "en-US";
   const e = s.eastern;
@@ -138,8 +141,14 @@ export default function Dashboard({ s, children }: { s: Snapshot; children?: Rea
             <dt>{t("nextNew")}</dt><dd>🌑 {s.moon.nextNew?.toLocaleDateString(locale, { day: "numeric", month: "short" })} · {daysUntil(s.moon.nextNew)}</dd>
           </dl>
           {s.nature.place.label && <p className="tiny muted">📍 {s.nature.place.label}</p>}
+          <h4>☀️ {lang === "vi" ? "Nhịp sinh học" : "Body clock"}</h4>
+          <ul className="advice">
+            {circadianTips(s.nature.sun.rise, s.nature.sun.set, env ?? null).map((tip, i) => <li key={i} className="small">{tr(tip)}</li>)}
+          </ul>
         </section>
-        {children}
+        <EnvironmentCard env={env} />
+        <SkyEventsCard events={s.events} />
+        <div className="span-wide">{children}</div>
       </div>
     </>
   );

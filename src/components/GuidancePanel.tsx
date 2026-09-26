@@ -4,7 +4,9 @@ import { useT } from "../lib/i18n";
 import { describeCheckin, describeCosmos, describeDiary, describeProfile, describeRecent, describeSnapshot, type Snapshot } from "../lib/snapshot";
 import { guide, useGuide } from "../lib/guideStore";
 import { describeDharma } from "../lib/dharma";
-import type { ChatMsg, CheckIn, CosmosData, DiaryEntry, Meditation, Profile, Reading, ReadingKind } from "../lib/types";
+import { describeEnvironment } from "../lib/environment";
+import { describeInsights } from "../lib/insights";
+import type { ChatMsg, CheckIn, CosmosData, DiaryEntry, EnvNow, Meditation, Profile, Reading, ReadingKind } from "../lib/types";
 
 const CHART_REQUEST = {
   en: `Please give me a deep reading of my Tử Vi and Bát Tự charts together (about 700–900 words, Markdown), with these sections:
@@ -53,13 +55,15 @@ interface Props {
   profile: Profile;
   snapshot: Snapshot;
   cosmos: CosmosData | null | undefined;
+  env: EnvNow | null | undefined;
+  allCheckins: CheckIn[];
   checkin?: CheckIn;
   recent: CheckIn[];
   reading?: Reading;
   today: string;
 }
 
-export default function GuidancePanel({ kind = "daily", diary, meditations, profile, snapshot, cosmos, checkin, recent, reading, today }: Props) {
+export default function GuidancePanel({ kind = "daily", diary, meditations, profile, snapshot, cosmos, env, allCheckins, checkin, recent, reading, today }: Props) {
   const { t, lang } = useT();
   const session = useGuide(kind);
   const [input, setInput] = useState("");
@@ -90,7 +94,7 @@ export default function GuidancePanel({ kind = "daily", diary, meditations, prof
   const interrupted = !busy && reading && session?.readingId === reading.id && (reading.status === "streaming" || reading.status === "interrupted");
 
   const buildContext = () =>
-    [describeProfile(profile), describeSnapshot(snapshot), describeCosmos(cosmos ?? null), describeRecent(recent), describeDiary(diary, today), describeDharma(snapshot.now, checkin, meditations)]
+    [describeProfile(profile), describeSnapshot(snapshot), describeEnvironment(env ?? null, snapshot.nature.place.label ?? "their location"), describeCosmos(cosmos ?? null), describeInsights(allCheckins), describeRecent(recent), describeDiary(diary, today), describeDharma(snapshot.now, checkin, meditations)]
       .filter(Boolean)
       .join("\n\n");
 

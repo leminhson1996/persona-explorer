@@ -18,6 +18,15 @@ const L = {
   more: { en: "Read more", vi: "Đọc thêm" },
   less: { en: "Show less", vi: "Thu gọn" },
   none: { en: "none", vi: "không có" },
+  limited: {
+    en: "NASA is rate-limiting the shared DEMO_KEY (about 10 requests per hour). Get a free personal key at api.nasa.gov and add NASA_API_KEY=… to .env, then restart. It will retry automatically within an hour.",
+    vi: "NASA đang giới hạn khóa dùng chung DEMO_KEY (khoảng 10 lượt/giờ). Hãy lấy khóa cá nhân miễn phí tại api.nasa.gov, thêm NASA_API_KEY=… vào file .env rồi khởi động lại. App sẽ tự thử lại sau tối đa 1 giờ.",
+  },
+  limitedServer: {
+    en: "NASA is rate-limiting requests right now; it will retry automatically within an hour.",
+    vi: "NASA đang tạm giới hạn lượt truy cập; app sẽ tự thử lại sau tối đa 1 giờ.",
+  },
+  staleNote: { en: "Showing saved data from", vi: "Đang hiện dữ liệu đã lưu lúc" },
   calm: { en: "calm", vi: "yên tĩnh" },
   active: { en: "active", vi: "hoạt động" },
   storm: { en: "storm", vi: "bão" },
@@ -30,12 +39,19 @@ function kpLevel(kp: number) {
 }
 
 export default function CosmosCard({ data }: { data: CosmosData | null | undefined }) {
-  const { tr } = useT();
+  const { tr, lang } = useT();
   const [expanded, setExpanded] = useState(false);
 
   if (data === undefined) return <section className="card cosmos"><h3>{tr(L.title)}</h3><p className="muted">{tr(L.loading)}</p></section>;
+  const limitMsg = data?.rateLimited ? <p className="hint small">⏳ {tr(data.usingDemoKey ? L.limited : L.limitedServer)}</p> : null;
   if (!data || (!data.apod && !data.spaceWeather && !data.asteroids))
-    return <section className="card cosmos"><h3>{tr(L.title)}</h3><p className="muted">{tr(L.unavailable)}</p></section>;
+    return (
+      <section className="card cosmos">
+        <h3>🛰 {tr(L.title)}</h3>
+        {limitMsg ?? <p className="muted">{tr(L.unavailable)}</p>}
+        {data?.errors.length ? <p className="tiny muted">{data.errors.join(" · ")}</p> : null}
+      </section>
+    );
 
   const w = data.spaceWeather;
   const a = data.asteroids;
@@ -44,6 +60,12 @@ export default function CosmosCard({ data }: { data: CosmosData | null | undefin
   return (
     <section className="card cosmos">
       <h3>🛰 {tr(L.title)}</h3>
+      {limitMsg}
+      {data.staleSince && (
+        <p className="tiny muted">
+          🕘 {tr(L.staleNote)} {new Date(data.staleSince).toLocaleString(lang === "vi" ? "vi-VN" : "en-US", { hour: "2-digit", minute: "2-digit", day: "numeric", month: "short" })}
+        </p>
+      )}
 
       {apod && (
         <figure className="apod">

@@ -30,6 +30,57 @@ export interface CheckIn {
   feelings: string[];
   note: string;
   focus: string;
+  /** Conditions at check-in time, kept so we can learn what actually affects this person. */
+  env?: CheckInEnv;
+}
+
+export interface CheckInEnv {
+  aqi?: number | null;
+  pm25?: number | null;
+  tempMax?: number | null;
+  feelsLikeMax?: number | null;
+  humidity?: number | null;
+  pressure?: number | null;
+  pressureDelta24h?: number | null;
+  uvMax?: number | null;
+  rainMm?: number | null;
+  kp?: number | null;
+  moonIllumination?: number;
+  daylightHours?: number | null;
+}
+
+export interface EnvNow {
+  time: string; // local ISO without zone
+  utcOffsetSeconds: number;
+  tempC: number;
+  feelsLikeC: number;
+  humidity: number;
+  pressure: number;
+  pressureDelta24h: number | null;
+  cloudCover: number;
+  windKmh: number;
+  precipitationMm: number;
+  weatherCode: number;
+  isDay: boolean;
+  uvNow: number;
+  today: {
+    tempMax: number; tempMin: number; feelsLikeMax: number; uvMax: number;
+    rainChance: number | null; rainMm: number; highUvFrom: string | null; highUvTo: string | null;
+  } | null;
+  air: { aqi: number; pm25: number; pm10: number; ozone: number; no2: number } | null;
+}
+
+export interface EnvDaily {
+  date: string;
+  tempMax: number | null;
+  feelsLikeMax: number | null;
+  humidity: number | null;
+  pressure: number | null;
+  pressureDelta24h: number | null;
+  uvMax: number | null;
+  rainMm: number | null;
+  aqi: number | null;
+  pm25: number | null;
 }
 
 export interface DiaryEntry {
@@ -83,6 +134,9 @@ export interface CosmosData {
     earthDirectedCme: boolean;
     kpNow: number | null;
     kpMax24h: number | null;
+    partial?: boolean; // some DONKI feeds unavailable
+    kpForecast?: { date: string; max: number }[]; // NOAA 3-day outlook
+    solarWindKms?: number | null;
   } | null;
   asteroids: {
     count: number;
@@ -90,4 +144,7 @@ export interface CosmosData {
     closest: { name: string; lunarDistances: number; diameterM: number; url: string } | null;
   } | null;
   errors: string[];
+  rateLimited?: boolean; // NASA refused (429); we back off for an hour
+  usingDemoKey?: boolean;
+  staleSince?: string | null; // oldest cached value shown, when fresh data wasn't available
 }
