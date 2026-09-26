@@ -1,6 +1,6 @@
-import type { CheckIn, Profile, Reading } from "./types";
+import type { CheckIn, DiaryEntry, Profile, Reading } from "./types";
 
-const KEYS = { profile: "ue.profile", checkins: "ue.checkins", readings: "ue.readings", lang: "ue.lang" } as const;
+const KEYS = { profile: "ue.profile", checkins: "ue.checkins", readings: "ue.readings", diary: "ue.diary", lang: "ue.lang" } as const;
 
 function read<T>(key: string, fallback: T): T {
   try {
@@ -26,9 +26,11 @@ export const store = {
   saveCheckins: (c: CheckIn[]) => write(KEYS.checkins, c),
   loadReadings: () => read<Reading[]>(KEYS.readings, []),
   saveReadings: (r: Reading[]) => write(KEYS.readings, r),
+  loadDiary: () => read<DiaryEntry[]>(KEYS.diary, []),
+  saveDiary: (d: DiaryEntry[]) => write(KEYS.diary, d),
   loadLang: () => read<"en" | "vi" | null>(KEYS.lang, null),
   saveLang: (l: "en" | "vi") => write(KEYS.lang, l),
-  clear: () => Object.values(KEYS).forEach((k) => localStorage.removeItem(k)),
+  clear: () => [...Object.values(KEYS), "ue.diaryDraft"].forEach((k) => localStorage.removeItem(k)),
 };
 
 export interface Backup {
@@ -37,6 +39,7 @@ export interface Backup {
   profile: Profile | null;
   checkins: CheckIn[];
   readings: Reading[];
+  diary?: DiaryEntry[];
 }
 
 export const makeBackup = (): Backup => ({
@@ -45,6 +48,7 @@ export const makeBackup = (): Backup => ({
   profile: store.loadProfile(),
   checkins: store.loadCheckins(),
   readings: store.loadReadings(),
+  diary: store.loadDiary(),
 });
 
 export function isBackup(x: unknown): x is Backup {

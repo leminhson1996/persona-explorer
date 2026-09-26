@@ -32,6 +32,14 @@ export interface CheckIn {
   focus: string;
 }
 
+export interface DiaryEntry {
+  id: string;
+  date: string; // YYYY-MM-DD local
+  createdAt: string;
+  updatedAt?: string;
+  text: string;
+}
+
 export interface ChatMsg {
   role: "user" | "assistant";
   content: string;
@@ -41,6 +49,7 @@ export interface Reading {
   id: string;
   date: string;
   createdAt: string;
+  kind?: "daily" | "chart"; // missing = daily
   /** Full API conversation; messages[0] is the auto-generated request and isn't shown. */
   messages: ChatMsg[];
 }

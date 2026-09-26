@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { useT } from "../lib/i18n";
 import { CITIES } from "../lib/snapshot";
 import { isBackup, makeBackup, store } from "../lib/storage";
+import { genderOf } from "../lib/bazi";
 import type { Place, Profile } from "../lib/types";
 
 interface Props {
@@ -119,6 +120,7 @@ export default function ProfileForm({ initial, onSave, onboarding, onRestore, on
       if (data.profile) store.saveProfile(data.profile);
       store.saveCheckins(data.checkins);
       store.saveReadings(data.readings ?? []);
+      store.saveDiary(data.diary ?? []);
       if (data.profile) setP(data.profile);
       onRestore?.();
     } catch {
@@ -139,7 +141,12 @@ export default function ProfileForm({ initial, onSave, onboarding, onRestore, on
         </div>
         <div className="field">
           <label htmlFor="gender">{t("gender")}</label>
-          <input id="gender" value={p.gender ?? ""} onChange={(e) => set("gender", e.target.value)} />
+          <select id="gender" value={genderOf(p) ?? ""} onChange={(e) => set("gender", e.target.value)}>
+            <option value="">{t("genderNone")}</option>
+            <option value="male">{t("genderMale")}</option>
+            <option value="female">{t("genderFemale")}</option>
+          </select>
+          <small>{t("genderHint")}</small>
         </div>
         <div className="field">
           <label htmlFor="bd">{t("birthDate")} *</label>

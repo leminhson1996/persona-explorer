@@ -2,8 +2,10 @@
 import * as astro from "./astro";
 import * as num from "./numerology";
 import * as lunar from "./lunar";
+import { computeBazi, TEN_GOD_MEANING } from "./bazi";
+import { computeTuVi } from "./tuvi";
 import { FEELINGS, MOODS } from "./i18n";
-import type { CheckIn, CosmosData, Place, Profile } from "./types";
+import type { CheckIn, CosmosData, DiaryEntry, Place, Profile } from "./types";
 
 export const CITIES: (Place & { label: string; tz: number })[] = [
   { label: "Hà Nội", lat: 21.0285, lon: 105.8542, tz: 7 },
@@ -93,6 +95,8 @@ export function buildSnapshot(profile: Profile, now = new Date()) {
 
   return {
     now,
+    bazi: computeBazi(profile, now),
+    tuvi: computeTuVi(profile, now),
     natal: { sun: find("Sun"), moon: find("Moon"), moonCertain, asc, mercury: find("Mercury"), venus: find("Venus"), mars: find("Mars") },
     sky, transits, moon, numbers, eastern, nature,
   };
@@ -149,6 +153,10 @@ export function describeSnapshot(s: Snapshot): string {
     "### Nature where they are",
     `- Location: ${s.nature.place.label ?? `${s.nature.place.lat.toFixed(2)}, ${s.nature.place.lon.toFixed(2)}`}; season: ${s.nature.season.en}`,
     s.nature.sun.daylightHours ? `- Daylight: ${s.nature.sun.daylightHours.toFixed(1)} hours` : "",
+    "",
+    describeBazi(s),
+    "",
+    describeTuVi(s),
   ];
   return lines.filter((l) => l !== "").join("\n").replace(/\n{3,}/g, "\n\n");
 }
@@ -207,4 +215,56 @@ export function describeRecent(checkins: CheckIn[]): string {
       return `- ${c.date}: mood ${c.mood}/5, energy ${c.energy}/10${feelings ? `, ${feelings}` : ""}${c.note ? `, "${c.note.slice(0, 140)}"` : ""}`;
     }),
   ].join("\n");
+}
+
+function describeBazi(s: Snapshot): string {
+  const b = s.bazi;
+  if (!b) return "### Bát Tự (Four Pillars)\n- Not available: birth time unknown.";
+  const p = b.pillars;
+  const col = (label: string, pl: typeof p.year) =>
+    `- ${label}: ${pl.name} (${pl.napAm}); stem god: ${pl.stemGod ?? "Day Master"}; hidden: ${pl.hidden.map((h, i) => `${lunar.CAN[h]} ${pl.hiddenGods[i]}`).join(", ")}`;
+  return [
+    "### Bát Tự (Four Pillars, solar-term based)",
+    col("Year", p.year), col("Month", p.month), col("Day", p.day), col("Hour", p.hour),
+    `- Day Master (Nhật chủ): ${b.dayMaster.name} ${b.dayMaster.element} (${b.dayMaster.yang ? "yang" : "yin"}); strength: ${b.strength} (support ratio ${(b.supportRatio * 100).toFixed(0)}%, rough estimate)`,
+    `- Element count of the 8 characters: ${Object.entries(b.count).map(([e, n]) => `${e} ${n}`).join(", ")}`,
+    `- Suggested favorable elements (hỷ dụng thần): ${b.favorable.join(", ")}`,
+    b.luck
+      ? `- Luck pillars (đại vận, ${b.luck.forward ? "forward" : "backward"}, start age ${b.luck.startAge}): ${b.luck.pillars.map((l) => `${l.age}: ${l.name} (${l.god})`).join("; ")}`
+      : "- Luck pillars: unknown (gender not given)",
+    b.currentLuck ? `- Current luck pillar: ${b.currentLuck.name} (${b.currentLuck.god}) since age ${b.currentLuck.age}` : "",
+    `- Today's day pillar ${b.today.dayPillar.name} is ${b.today.dayGod} to the Day Master (${TEN_GOD_MEANING[b.today.dayGod].en}); this year ${b.today.yearPillar.name} is ${b.today.yearGod}.`,
+  ].filter(Boolean).join("\n");
+}
+
+function describeTuVi(s: Snapshot): string {
+  const t = s.tuvi;
+  if (!t) return "### Tử Vi Đẩu Số\n- Not available: birth time unknown.";
+  const palace = (chi: number) => t.palaces[chi];
+  const line = (chi: number) => {
+    const pl = palace(chi);
+    const stars = pl.stars.map((st) => `${st.name}${st.hoa ? ` (Hóa ${st.hoa})` : ""}`).join(", ") || "no main stars (vô chính diệu)";
+    return `- ${pl.name} at ${lunar.CAN[pl.can]} ${lunar.CHI[pl.chi]}${pl.isThan ? " [Thân cư]" : ""}, đại hạn from age ${pl.daiHan}: ${stars}`;
+  };
+  const order = Array.from({ length: 12 }, (_, i) => (t.menh + i) % 12);
+  return [
+    "### Tử Vi Đẩu Số (Vietnamese school)",
+    `- Lunar birth: day ${t.day}, month ${t.month}${t.lunar.leap ? " (leap)" : ""}, year ${t.year.name}, ${t.hourName}; ${t.amDuong}`,
+    `- Bản mệnh ${t.banMenh.name} (${t.banMenh.element}); ${t.cuc.name}; Cục vs Mệnh: ${t.cucVsMenh.label.en}`,
+    `- Mệnh chủ ${t.menhChu}, Thân chủ ${t.thanChu}; lunar age ${t.tuoiAm}`,
+    t.currentDaiHan ? `- Current đại hạn: ${t.currentDaiHan.name} palace (${t.currentDaiHan.daiHan}–${t.currentDaiHan.daiHan + 9})` : "",
+    `- This year's lưu niên falls on the ${palace(t.luuNien).name} palace`,
+    ...order.map(line),
+  ].filter(Boolean).join("\n");
+}
+
+export function describeDiary(entries: DiaryEntry[], today: string): string {
+  if (!entries.length) return "";
+  const sorted = [...entries].sort((a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt));
+  const todays = sorted.filter((e) => e.date === today);
+  const earlier = sorted.filter((e) => e.date < today).slice(-6);
+  const out = ["### Their diary (private, written by them)"];
+  if (earlier.length) out.push("Recent days:", ...earlier.map((e) => `- ${e.date}: ${e.text.slice(0, 400)}${e.text.length > 400 ? "…" : ""}`));
+  if (todays.length) out.push("Today:", ...todays.map((e) => e.text.slice(0, 2500)));
+  return out.join("\n");
 }

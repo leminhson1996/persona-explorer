@@ -16,7 +16,7 @@ export type Element = "Mộc" | "Hỏa" | "Thổ" | "Kim" | "Thủy";
 export const ELEMENT_EN: Record<Element, string> = {
   Mộc: "Wood", Hỏa: "Fire", Thổ: "Earth", Kim: "Metal", Thủy: "Water",
 };
-const CAN_ELEMENT: Element[] = ["Mộc", "Mộc", "Hỏa", "Hỏa", "Thổ", "Thổ", "Kim", "Kim", "Thủy", "Thủy"];
+export const CAN_ELEMENT: Element[] = ["Mộc", "Mộc", "Hỏa", "Hỏa", "Thổ", "Thổ", "Kim", "Kim", "Thủy", "Thủy"];
 
 // Nạp Âm for each pair of the 60-year cycle (index = floor(cycle / 2)).
 const NAP_AM: [string, Element][] = [
@@ -30,7 +30,7 @@ const NAP_AM: [string, Element][] = [
   ["Thạch Lựu Mộc", "Mộc"], ["Đại Hải Thủy", "Thủy"],
 ];
 
-function jdFromDate(dd: number, mm: number, yy: number): number {
+export function jdFromDate(dd: number, mm: number, yy: number): number {
   const a = Math.floor((14 - mm) / 12);
   const y = yy + 4800 - a;
   const m = mm + 12 * a - 3;
@@ -144,7 +144,7 @@ export interface CanChi {
   napAmElement: Element;
 }
 
-function canChi(can: number, chi: number): CanChi {
+export function canChi(can: number, chi: number): CanChi {
   let cycle = 0;
   while (cycle % 10 !== can || cycle % 12 !== chi) cycle++;
   const [napAm, napAmElement] = NAP_AM[Math.floor(cycle / 2)];
@@ -161,8 +161,8 @@ export const yearCanChi = (lunarYear: number) => canChi((lunarYear + 6) % 10, (l
 export const monthCanChi = (l: LunarDate) => canChi((l.year * 12 + l.month + 3) % 10, (l.month + 1) % 12);
 export const dayCanChi = (l: LunarDate) => canChi((l.jd + 9) % 10, (l.jd + 1) % 12);
 
-const GENERATES: Record<Element, Element> = { Mộc: "Hỏa", Hỏa: "Thổ", Thổ: "Kim", Kim: "Thủy", Thủy: "Mộc" };
-const CONTROLS: Record<Element, Element> = { Mộc: "Thổ", Thổ: "Thủy", Thủy: "Hỏa", Hỏa: "Kim", Kim: "Mộc" };
+export const GENERATES: Record<Element, Element> = { Mộc: "Hỏa", Hỏa: "Thổ", Thổ: "Kim", Kim: "Thủy", Thủy: "Mộc" };
+export const CONTROLS: Record<Element, Element> = { Mộc: "Thổ", Thổ: "Thủy", Thủy: "Hỏa", Hỏa: "Kim", Kim: "Mộc" };
 
 export type Relation = "same" | "nourishes-you" | "you-nourish" | "you-control" | "controls-you";
 

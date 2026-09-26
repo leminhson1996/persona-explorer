@@ -9,11 +9,19 @@ It combines:
 | Western astrology | Natal Sun/Moon/Rising, today's planets, retrogrades, transits to your chart, moon phase | `astronomy-engine` (real planetary positions) |
 | Numerology | Life Path, Expression (from name), Birthday, Personal Year/Month/Day, Universal Day | Pythagorean system |
 | Vietnamese / Eastern | Âm lịch, Can Chi (day/month/year), con giáp, bản mệnh (Nạp Âm), Ngũ Hành relation with today, tiết khí | Hồ Ngọc Đức lunar algorithm (UTC+7) |
+| Bát Tự (Tứ Trụ) | Four pillars from real solar terms, hidden stems, ten gods, Day Master strength, five-element balance, favorable elements, 10-year luck pillars (start age from solar terms), today's ten god | `src/lib/bazi.ts` |
+| Tử Vi Đẩu Số | 12 palaces, Mệnh/Thân, Cục, 14 main stars, key auxiliary stars (Tả Hữu, Xương Khúc, Lộc Tồn, Kình Đà, Khôi Việt, Không Kiếp, Thiên Mã), Tứ Hóa, Mệnh chủ/Thân chủ, đại hạn, lưu niên | `src/lib/tuvi.ts` (Vietnamese school) |
 | Nature | Season, sunrise/sunset, daylight, next full/new moon | `astronomy-engine` |
 | Live space data | Astronomy Picture of the Day, solar flares, CMEs, geomagnetic storms, near-Earth asteroids, Kp index | NASA Open APIs (APOD, DONKI, NeoWs) + NOAA SWPC |
-| **You** | Profile (birth data, life situation, goals, challenges, values) + daily check-in (mood, energy, feelings, thoughts) | You |
+| **You** | Profile (birth data, life situation, goals, challenges, values), daily check-in (mood, energy, feelings, thoughts) and a free-form **diary** | You |
 
-Claude weaves all of it into a daily reading, and you can ask follow-up questions.
+Claude weaves all of it into a daily reading, can give a deep reading of your Tử Vi + Bát Tự charts, and you can ask follow-up questions.
+
+Tử Vi and Bát Tự need your birth time; gender sets the direction of đại hạn / đại vận. Births from 23:00 count as the next day (giờ Tý).
+
+## Writing your diary
+
+Open **Journal (Nhật ký)** → write in **Write your diary**, pick a past date to backfill if you like, and press **Save** (or ⌘/Ctrl + Enter). Drafts are kept automatically. You can write several entries a day, and edit or delete them later. The Today tab has a shortcut button. Your guide reads today's entries and short excerpts from the last few days when it writes your reading.
 
 ## Run it
 

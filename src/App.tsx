@@ -2,16 +2,19 @@ import { useEffect, useMemo, useState } from "react";
 import { LangContext, UI, type Lang } from "./lib/i18n";
 import { localDateKey, store } from "./lib/storage";
 import { buildSnapshot } from "./lib/snapshot";
-import type { CheckIn, CosmosData, Profile, Reading } from "./lib/types";
+import type { CheckIn, CosmosData, DiaryEntry, Profile, Reading } from "./lib/types";
 import ProfileForm from "./components/ProfileForm";
 import CheckInCard from "./components/CheckInCard";
 import Dashboard from "./components/Dashboard";
 import CosmosCard from "./components/CosmosCard";
 import GuidancePanel from "./components/GuidancePanel";
 import Journal from "./components/Journal";
+import Charts from "./components/Charts";
 import Starfield from "./components/Starfield";
 
-type Tab = "today" | "journal" | "profile";
+type Tab = "today" | "charts" | "journal" | "profile";
+
+const TAB_LABEL = { today: "tabToday", charts: "tabCharts", journal: "tabJournal", profile: "tabProfile" } as const;
 
 const initialLang = (): Lang => store.loadLang() ?? (navigator.language.startsWith("vi") ? "vi" : "en");
 
@@ -20,6 +23,7 @@ export default function App() {
   const [profile, setProfile] = useState<Profile | null>(store.loadProfile);
   const [checkins, setCheckins] = useState<CheckIn[]>(store.loadCheckins);
   const [readings, setReadings] = useState<Reading[]>(store.loadReadings);
+  const [diary, setDiary] = useState<DiaryEntry[]>(store.loadDiary);
   const [tab, setTab] = useState<Tab>("today");
   const [now, setNow] = useState(() => new Date());
   const [cosmos, setCosmos] = useState<CosmosData | null | undefined>(undefined);
@@ -68,8 +72,17 @@ export default function App() {
     store.saveReadings(r);
   };
 
+  const saveDiary = (d: DiaryEntry[]) => {
+    setDiary(d);
+    store.saveDiary(d);
+  };
+  const upsertReading = (r: Reading) => saveReadings([...readings.filter((x) => x.id !== r.id), r]);
+
   const todayCheckin = [...checkins].reverse().find((c) => c.date === today);
-  const todayReading = [...readings].reverse().find((r) => r.date === today);
+  const todayReading = [...readings].reverse().find((r) => r.date === today && r.kind !== "chart");
+  const chartReading = [...readings].reverse().find((r) => r.kind === "chart");
+  const recent = checkins.slice(-8, todayCheckin ? -1 : undefined);
+  const todayDiaryCount = diary.filter((d) => d.date === today).length;
 
   return (
     <LangContext.Provider value={lang}>
@@ -99,9 +112,9 @@ export default function App() {
         ) : (
           <>
             <nav className="tabs">
-              {(["today", "journal", "profile"] as const).map((t) => (
+              {(["today", "charts", "journal", "profile"] as const).map((t) => (
                 <button key={t} className={tab === t ? "on" : ""} onClick={() => setTab(t)}>
-                  {UI[t === "today" ? "tabToday" : t === "journal" ? "tabJournal" : "tabProfile"][lang]}
+                  {UI[TAB_LABEL[t]][lang]}
                 </button>
               ))}
             </nav>
@@ -112,28 +125,54 @@ export default function App() {
                     <CosmosCard data={cosmos} />
                   </Dashboard>
                   <div className="today-cols">
-                    <CheckInCard
-                      existing={todayCheckin}
-                      today={today}
-                      onSave={(c) => saveCheckins([...checkins.filter((x) => x.id !== c.id), c])}
-                    />
+                    <div className="stack">
+                      <CheckInCard
+                        existing={todayCheckin}
+                        today={today}
+                        onSave={(c) => saveCheckins([...checkins.filter((x) => x.id !== c.id), c])}
+                      />
+                      <button className="card diary-link" onClick={() => setTab("journal")}>
+                        <span>{UI.writeDiary[lang]}</span>
+                        {todayDiaryCount > 0 && <span className="pill">✓ {todayDiaryCount}</span>}
+                      </button>
+                    </div>
                     <GuidancePanel
+                      diary={diary}
+                      profile={profile}
+                      snapshot={snapshot}
+                      cosmos={cosmos}
+                      checkin={todayCheckin}
+                      recent={recent}
+                      reading={todayReading}
+                      today={today}
+                      onSave={upsertReading}
+                    />
+                  </div>
+                </div>
+              )}
+              {tab === "charts" && snapshot && (
+                <Charts bazi={snapshot.bazi} tuvi={snapshot.tuvi} name={profile.name} onOpenProfile={() => setTab("profile")}>
+                  <GuidancePanel
+                    kind="chart"
+                    diary={diary}
                     profile={profile}
                     snapshot={snapshot}
                     cosmos={cosmos}
                     checkin={todayCheckin}
-                    recent={checkins.slice(-8, todayCheckin ? -1 : undefined)}
-                    reading={todayReading}
+                    recent={recent}
+                    reading={chartReading}
                     today={today}
-                    onSave={(r) => saveReadings([...readings.filter((x) => x.id !== r.id), r])}
-                    />
-                  </div>
-                </div>
+                    onSave={upsertReading}
+                  />
+                </Charts>
               )}
               {tab === "journal" && (
                 <Journal
                   checkins={checkins}
                   readings={readings}
+                  diary={diary}
+                  onSaveDiary={(e) => saveDiary([...diary.filter((x) => x.id !== e.id), e])}
+                  onDeleteDiary={(id) => saveDiary(diary.filter((d) => d.id !== id))}
                   onDeleteCheckin={(id) => saveCheckins(checkins.filter((c) => c.id !== id))}
                   onDeleteReading={(id) => saveReadings(readings.filter((r) => r.id !== id))}
                 />
@@ -146,12 +185,14 @@ export default function App() {
                     setProfile(store.loadProfile());
                     setCheckins(store.loadCheckins());
                     setReadings(store.loadReadings());
+                    setDiary(store.loadDiary());
                   }}
                   onReset={() => {
                     store.clear();
                     setProfile(null);
                     setCheckins([]);
                     setReadings([]);
+                    setDiary([]);
                     setTab("today");
                   }}
                 />

@@ -1,11 +1,30 @@
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { useT } from "../lib/i18n";
-import { describeCheckin, describeCosmos, describeProfile, describeRecent, describeSnapshot, type Snapshot } from "../lib/snapshot";
+import { describeCheckin, describeCosmos, describeDiary, describeProfile, describeRecent, describeSnapshot, type Snapshot } from "../lib/snapshot";
 import { uid } from "../lib/storage";
-import type { ChatMsg, CheckIn, CosmosData, Profile, Reading } from "../lib/types";
+import type { ChatMsg, CheckIn, CosmosData, DiaryEntry, Profile, Reading } from "../lib/types";
+
+const CHART_REQUEST = {
+  en: `Please give me a deep reading of my Tử Vi and Bát Tự charts together (about 700–900 words, Markdown), with these sections:
+### 🌟 Core nature (Mệnh palace, Day Master)
+### 💪 Gifts and life lessons
+### 💼 Career and money (Quan Lộc, Tài Bạch, wealth/officer stars)
+### ❤️ Love and relationships (Phu Thê, relevant ten gods)
+### ⏳ The period I'm in now (current đại hạn, đại vận, this year)
+### 🌱 How to grow (elements to nourish, habits, a practice)`,
+  vi: `Hãy luận giải sâu lá số Tử Vi và Bát Tự của mình (khoảng 700–900 chữ, Markdown), gồm các phần:
+### 🌟 Bản chất cốt lõi (cung Mệnh, Nhật chủ)
+### 💪 Thiên phú và bài học cuộc đời
+### 💼 Sự nghiệp và tài chính (Quan Lộc, Tài Bạch, sao tài/quan)
+### ❤️ Tình cảm và các mối quan hệ (Phu Thê, thập thần liên quan)
+### ⏳ Giai đoạn hiện tại (đại hạn, đại vận, lưu niên năm nay)
+### 🌱 Hướng phát triển (ngũ hành nên bồi bổ, thói quen, một thực hành)`,
+};
 
 interface Props {
+  kind?: "daily" | "chart";
+  diary: DiaryEntry[];
   profile: Profile;
   snapshot: Snapshot;
   cosmos: CosmosData | null | undefined;
@@ -16,7 +35,7 @@ interface Props {
   onSave: (r: Reading) => void;
 }
 
-export default function GuidancePanel({ profile, snapshot, cosmos, checkin, recent, reading, today, onSave }: Props) {
+export default function GuidancePanel({ kind = "daily", diary, profile, snapshot, cosmos, checkin, recent, reading, today, onSave }: Props) {
   const { t, lang } = useT();
   const [messages, setMessages] = useState<ChatMsg[]>(reading?.messages ?? []);
   const [pending, setPending] = useState<string | null>(null);
@@ -39,7 +58,7 @@ export default function GuidancePanel({ profile, snapshot, cosmos, checkin, rece
   }, [pending]);
 
   const buildContext = () =>
-    [describeProfile(profile), describeSnapshot(snapshot), describeCosmos(cosmos ?? null), describeRecent(recent)]
+    [describeProfile(profile), describeSnapshot(snapshot), describeCosmos(cosmos ?? null), describeRecent(recent), describeDiary(diary, today)]
       .filter(Boolean)
       .join("\n\n");
 
@@ -77,7 +96,7 @@ export default function GuidancePanel({ profile, snapshot, cosmos, checkin, rece
       if (text.trim()) {
         const next = [...history, { role: "assistant" as const, content: text }];
         setMessages(next);
-        onSave({ id: readingId.current, date: today, createdAt: reading?.createdAt ?? new Date().toISOString(), messages: next });
+        onSave({ id: readingId.current, date: today, kind, createdAt: reading?.createdAt ?? new Date().toISOString(), messages: next });
       } else {
         // Nothing came back: roll back the unanswered message so it can be retried.
         setMessages(history.slice(0, -1));
@@ -88,6 +107,10 @@ export default function GuidancePanel({ profile, snapshot, cosmos, checkin, rece
 
   const requestReading = () => {
     readingId.current = uid();
+    if (kind === "chart") {
+      send([{ role: "user", content: CHART_REQUEST[lang] }]);
+      return;
+    }
     const ask = lang === "vi" ? "Hãy cho mình lời luận giải hôm nay." : "Please give me today's reading.";
     send([{ role: "user", content: `${ask}\n\nMy check-in today:\n${describeCheckin(checkin)}` }]);
   };
@@ -107,16 +130,16 @@ export default function GuidancePanel({ profile, snapshot, cosmos, checkin, rece
     <section className="card guidance">
       <div className="guidance-head">
         <div>
-          <h2>✦ {t("guidanceTitle")}</h2>
-          <p className="muted small">{t("guidanceIntro")}</p>
+          <h2>✦ {t(kind === "chart" ? "chartReadingTitle" : "guidanceTitle")}</h2>
+          <p className="muted small">{t(kind === "chart" ? "chartReadingIntro" : "guidanceIntro")}</p>
         </div>
         {busy ? (
           <button className="ghost" onClick={() => abortRef.current?.abort()}>■ {t("stop")}</button>
         ) : (
-          <button className="primary" onClick={requestReading}>{messages.length ? t("regenerate") : t("receive")}</button>
+          <button className="primary" onClick={requestReading}>{messages.length ? t("regenerate") : t(kind === "chart" ? "receiveChart" : "receive")}</button>
         )}
       </div>
-      {!checkin && !messages.length && <p className="hint">💡 {t("checkinFirst")}</p>}
+      {kind === "daily" && !checkin && !messages.length && <p className="hint">💡 {t("checkinFirst")}</p>}
 
       <div className="thread">
         {visible.map((m, i) =>

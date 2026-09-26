@@ -222,3 +222,81 @@ button:disabled { opacity: 0.5; cursor: default; }
 .note { font-style: italic; color: var(--muted); }
 
 .foot { text-align: center; color: var(--muted); font-size: 0.75rem; margin-top: 32px; }
+
+/* Shared helpers */
+.stack { display: grid; gap: 16px; align-content: start; }
+.row.between { justify-content: space-between; flex-wrap: wrap; }
+.center { text-align: center; }
+.row > input.date-input { width: auto; flex: 0 0 auto; }
+
+/* Diary */
+.diary-link {
+  display: flex; justify-content: space-between; align-items: center; width: 100%;
+  color: var(--text); font: 600 1rem var(--sans); text-align: left; padding: 16px 20px;
+}
+.diary-link:hover { border-color: var(--accent); }
+.diary textarea { margin: 10px 0; line-height: 1.7; }
+.entry-diary { padding: 8px 0; border-top: 1px solid var(--card-border); }
+.entry-diary:first-of-type { border-top: 0; }
+.diary-text { white-space: pre-wrap; line-height: 1.7; }
+
+/* Five-element colors */
+:root {
+  --el-wood: #6fcf8f; --el-fire: #ff8a7a; --el-earth: #e2b86b; --el-metal: #cfd6e6; --el-water: #6fb3ff;
+}
+@media (prefers-color-scheme: light) {
+  :root { --el-wood: #1f8f4e; --el-fire: #d2412f; --el-earth: #9a6a12; --el-metal: #5b6478; --el-water: #1f6fd1; }
+}
+.el-wood { --el: var(--el-wood); } .el-fire { --el: var(--el-fire); } .el-earth { --el: var(--el-earth); }
+.el-metal { --el: var(--el-metal); } .el-water { --el: var(--el-water); }
+.el { display: inline-block; padding: 1px 8px; margin: 0 2px; border-radius: 999px; font-size: 0.78rem; font-weight: 600;
+  color: var(--el); border: 1px solid color-mix(in srgb, var(--el) 50%, transparent); }
+
+/* Bát Tự */
+.pillars-wrap { overflow-x: auto; margin: 6px 0 14px; }
+.pillars { width: 100%; border-collapse: collapse; text-align: center; min-width: 420px; }
+.pillars th, .pillars td { padding: 6px 4px; border-bottom: 1px solid var(--card-border); vertical-align: top; }
+.pillars thead th { color: var(--accent); font: 600 1.05rem var(--serif); }
+.pillars tbody th { text-align: left; color: var(--muted); font-weight: 500; font-size: 0.8rem; white-space: nowrap; }
+.pillars .god { font-size: 0.8rem; color: var(--accent-2); }
+.glyph-cell { font: 600 1.5rem/1.2 var(--serif); color: var(--el); }
+.bazi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 700px) { .bazi-grid { grid-template-columns: 1fr; } }
+.el-bars { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+.el-bars li { display: grid; grid-template-columns: 64px 1fr 20px; align-items: center; gap: 8px; }
+.bar { height: 8px; background: var(--field); border-radius: 999px; overflow: hidden; }
+.bar .fill { display: block; height: 100%; background: var(--el); border-radius: 999px; }
+.luck-row { display: grid; grid-template-columns: repeat(8, minmax(56px, 1fr)); gap: 6px; overflow-x: auto; padding-bottom: 4px; }
+.luck { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px; background: var(--field);
+  border: 1px solid var(--field-border); border-radius: 12px; text-align: center; }
+.luck strong { font: 600 1.1rem/1.1 var(--serif); }
+.luck.now { border-color: var(--accent-2); box-shadow: 0 0 0 1px var(--accent-2); }
+.now-tag { color: var(--accent-2); font-weight: 600; }
+
+/* Tử Vi */
+.tuvi-wrap { overflow-x: auto; margin: 6px 0 10px; }
+.tuvi-grid { display: grid; grid-template-columns: repeat(4, minmax(150px, 1fr)); grid-auto-rows: minmax(150px, auto); gap: 4px; min-width: 620px; }
+.palace { background: var(--field); border: 1px solid var(--field-border); border-radius: 10px; padding: 8px; display: flex; flex-direction: column; gap: 4px; }
+.palace.menh { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.palace.daihan { background: color-mix(in srgb, var(--accent-2) 10%, var(--field)); }
+.palace.luunien .palace-foot .ln { color: var(--good); font-weight: 700; }
+.palace-head { display: flex; justify-content: space-between; align-items: baseline; gap: 4px; }
+.palace-name { font: 600 1rem var(--serif); color: var(--accent); }
+.than { color: var(--accent-2); font-size: 0.8rem; }
+.stars { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 2px 8px; flex: 1; align-content: flex-start; }
+.stars li { font-size: 0.78rem; }
+.stars li.main { flex-basis: 100%; font-weight: 700; font-size: 0.9rem; }
+.stars li.tone-good { color: var(--good); } .stars li.tone-bad { color: var(--bad); }
+.stars li.main.tone-neutral { color: var(--text); } .stars li.minor.tone-neutral { color: var(--muted); }
+.hoa { display: inline-block; margin-left: 4px; padding: 0 5px; border-radius: 6px; font-size: 0.68rem; font-weight: 700; vertical-align: 1px; }
+.hoa-good { background: color-mix(in srgb, var(--good) 22%, transparent); color: var(--good); }
+.hoa-ky { background: color-mix(in srgb, var(--bad) 22%, transparent); color: var(--bad); }
+.palace-foot { display: flex; justify-content: space-between; }
+.palace-center { grid-column: 2 / 4; grid-row: 2 / 4; padding: 16px; border-radius: 10px; text-align: center;
+  background: radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 70%); }
+.palace-center .kv { text-align: left; max-width: 300px; margin: 8px auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; margin-bottom: 8px; }
+.sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; border: 1px solid var(--field-border); }
+.sw.menh { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.sw.daihan { background: color-mix(in srgb, var(--accent-2) 30%, transparent); }
+.sw.luunien { background: color-mix(in srgb, var(--good) 40%, transparent); }
