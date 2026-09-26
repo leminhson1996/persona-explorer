@@ -11,6 +11,7 @@ It combines:
 | Vietnamese / Eastern | Âm lịch, Can Chi (day/month/year), con giáp, bản mệnh (Nạp Âm), Ngũ Hành relation with today, tiết khí | Hồ Ngọc Đức lunar algorithm (UTC+7) |
 | Bát Tự (Tứ Trụ) | Four pillars from real solar terms, hidden stems, ten gods, Day Master strength, five-element balance, favorable elements, 10-year luck pillars (start age from solar terms), today's ten god | `src/lib/bazi.ts` |
 | Tử Vi Đẩu Số | 12 palaces, Mệnh/Thân, Cục, 14 main stars, key auxiliary stars (Tả Hữu, Xương Khúc, Lộc Tồn, Kình Đà, Khôi Việt, Không Kiếp, Thiên Mã), Tứ Hóa, Mệnh chủ/Thân chủ, đại hạn, lưu niên | `src/lib/tuvi.ts` (Vietnamese school) |
+| Buddhist path (Phật pháp) | Phật lịch, Sóc/Vọng and thập trai days, upcoming Buddhist holidays (Phật Đản, Vu Lan, vía Quán Thế Âm…), mind states from your check-in (five hindrances + sorrow, with antidotes), meditation timer with bell and practice log, and Claude guidance structured by the Four Noble Truths | `src/lib/dharma.ts` |
 | Nature | Season, sunrise/sunset, daylight, next full/new moon | `astronomy-engine` |
 | Live space data | Astronomy Picture of the Day, solar flares, CMEs, geomagnetic storms, near-Earth asteroids, Kp index | NASA Open APIs (APOD, DONKI, NeoWs) + NOAA SWPC |
 | **You** | Profile (birth data, life situation, goals, challenges, values), daily check-in (mood, energy, feelings, thoughts) and a free-form **diary** | You |

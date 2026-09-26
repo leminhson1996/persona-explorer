@@ -121,6 +121,7 @@ export default function ProfileForm({ initial, onSave, onboarding, onRestore, on
       store.saveCheckins(data.checkins);
       store.saveReadings(data.readings ?? []);
       store.saveDiary(data.diary ?? []);
+      store.saveMeditations(data.meditations ?? []);
       if (data.profile) setP(data.profile);
       onRestore?.();
     } catch {

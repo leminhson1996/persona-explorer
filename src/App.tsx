@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { LangContext, UI, type Lang } from "./lib/i18n";
 import { localDateKey, store } from "./lib/storage";
 import { buildSnapshot } from "./lib/snapshot";
-import type { CheckIn, CosmosData, DiaryEntry, Profile, Reading } from "./lib/types";
+import type { CheckIn, CosmosData, DiaryEntry, Meditation, Profile, Reading } from "./lib/types";
 import ProfileForm from "./components/ProfileForm";
 import CheckInCard from "./components/CheckInCard";
 import Dashboard from "./components/Dashboard";
@@ -10,11 +10,12 @@ import CosmosCard from "./components/CosmosCard";
 import GuidancePanel from "./components/GuidancePanel";
 import Journal from "./components/Journal";
 import Charts from "./components/Charts";
+import Dharma from "./components/Dharma";
 import Starfield from "./components/Starfield";
 
-type Tab = "today" | "charts" | "journal" | "profile";
+type Tab = "today" | "charts" | "dharma" | "journal" | "profile";
 
-const TAB_LABEL = { today: "tabToday", charts: "tabCharts", journal: "tabJournal", profile: "tabProfile" } as const;
+const TAB_LABEL = { today: "tabToday", charts: "tabCharts", dharma: "tabDharma", journal: "tabJournal", profile: "tabProfile" } as const;
 
 const initialLang = (): Lang => store.loadLang() ?? (navigator.language.startsWith("vi") ? "vi" : "en");
 
@@ -24,6 +25,7 @@ export default function App() {
   const [checkins, setCheckins] = useState<CheckIn[]>(store.loadCheckins);
   const [readings, setReadings] = useState<Reading[]>(store.loadReadings);
   const [diary, setDiary] = useState<DiaryEntry[]>(store.loadDiary);
+  const [meditations, setMeditations] = useState<Meditation[]>(store.loadMeditations);
   const [tab, setTab] = useState<Tab>("today");
   const [now, setNow] = useState(() => new Date());
   const [cosmos, setCosmos] = useState<CosmosData | null | undefined>(undefined);
@@ -76,10 +78,15 @@ export default function App() {
     setDiary(d);
     store.saveDiary(d);
   };
+  const saveMeditations = (m: Meditation[]) => {
+    setMeditations(m);
+    store.saveMeditations(m);
+  };
   const upsertReading = (r: Reading) => saveReadings([...readings.filter((x) => x.id !== r.id), r]);
 
   const todayCheckin = [...checkins].reverse().find((c) => c.date === today);
-  const todayReading = [...readings].reverse().find((r) => r.date === today && r.kind !== "chart");
+  const todayReading = [...readings].reverse().find((r) => r.date === today && (r.kind ?? "daily") === "daily");
+  const dharmaReading = [...readings].reverse().find((r) => r.date === today && r.kind === "dharma");
   const chartReading = [...readings].reverse().find((r) => r.kind === "chart");
   const recent = checkins.slice(-8, todayCheckin ? -1 : undefined);
   const todayDiaryCount = diary.filter((d) => d.date === today).length;
@@ -112,7 +119,7 @@ export default function App() {
         ) : (
           <>
             <nav className="tabs">
-              {(["today", "charts", "journal", "profile"] as const).map((t) => (
+              {(["today", "charts", "dharma", "journal", "profile"] as const).map((t) => (
                 <button key={t} className={tab === t ? "on" : ""} onClick={() => setTab(t)}>
                   {UI[TAB_LABEL[t]][lang]}
                 </button>
@@ -138,6 +145,7 @@ export default function App() {
                     </div>
                     <GuidancePanel
                       diary={diary}
+                      meditations={meditations}
                       profile={profile}
                       snapshot={snapshot}
                       cosmos={cosmos}
@@ -155,6 +163,7 @@ export default function App() {
                   <GuidancePanel
                     kind="chart"
                     diary={diary}
+                    meditations={meditations}
                     profile={profile}
                     snapshot={snapshot}
                     cosmos={cosmos}
@@ -165,6 +174,29 @@ export default function App() {
                     onSave={upsertReading}
                   />
                 </Charts>
+              )}
+              {tab === "dharma" && snapshot && (
+                <Dharma
+                  now={now}
+                  checkin={todayCheckin}
+                  meditations={meditations}
+                  onSaveMeditation={(m) => saveMeditations([...meditations, m])}
+                  onGoCheckin={() => setTab("today")}
+                >
+                  <GuidancePanel
+                    kind="dharma"
+                    diary={diary}
+                    meditations={meditations}
+                    profile={profile}
+                    snapshot={snapshot}
+                    cosmos={cosmos}
+                    checkin={todayCheckin}
+                    recent={recent}
+                    reading={dharmaReading}
+                    today={today}
+                    onSave={upsertReading}
+                  />
+                </Dharma>
               )}
               {tab === "journal" && (
                 <Journal
@@ -186,6 +218,7 @@ export default function App() {
                     setCheckins(store.loadCheckins());
                     setReadings(store.loadReadings());
                     setDiary(store.loadDiary());
+                    setMeditations(store.loadMeditations());
                   }}
                   onReset={() => {
                     store.clear();
@@ -193,6 +226,7 @@ export default function App() {
                     setCheckins([]);
                     setReadings([]);
                     setDiary([]);
+                    setMeditations([]);
                     setTab("today");
                   }}
                 />

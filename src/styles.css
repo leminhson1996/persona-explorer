@@ -300,3 +300,33 @@ button:disabled { opacity: 0.5; cursor: default; }
 .sw.menh { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
 .sw.daihan { background: color-mix(in srgb, var(--accent-2) 30%, transparent); }
 .sw.luunien { background: color-mix(in srgb, var(--good) 40%, transparent); }
+
+/* Buddhist path */
+.dharma-hero { display: flex; gap: 20px; align-items: center; }
+.lotus { font-size: 4rem; line-height: 1; color: var(--accent-2); text-shadow: 0 0 30px color-mix(in srgb, var(--accent-2) 60%, transparent); flex-shrink: 0; }
+@media (max-width: 560px) { .dharma-hero { flex-direction: column; text-align: center; } .dharma-hero .row { justify-content: center; } }
+.pill.gold { color: var(--accent-2); border: 1px solid color-mix(in srgb, var(--accent-2) 45%, transparent); }
+.mind-list { list-style: none; padding: 0; margin: 0 0 8px; display: grid; gap: 10px; }
+.mind-list li { padding: 10px 12px; border-radius: 12px; background: var(--field); border-left: 3px solid var(--warn); }
+.upcoming { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.upcoming li { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; font-size: 0.92rem; }
+.upcoming li .tiny { white-space: nowrap; }
+.center-chips { justify-content: center; margin: 10px 0; }
+.center-row { justify-content: center; margin: 8px 0; }
+.breath { position: relative; width: 150px; height: 150px; margin: 14px auto 6px; display: grid; place-items: center; }
+.breath-circle {
+  position: absolute; inset: 18px; border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 45%, transparent), color-mix(in srgb, var(--accent) 8%, transparent));
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+}
+.breath.on .breath-circle { animation: breathe 10s ease-in-out infinite; }
+@keyframes breathe { 0%, 100% { transform: scale(0.72); } 50% { transform: scale(1.12); } }
+.breath-time { position: relative; font: 600 1.8rem var(--serif); font-variant-numeric: tabular-nums; }
+.breath-words { position: relative; height: 1.5em; text-align: center; color: var(--muted); font-style: italic; }
+.breath-words span { position: absolute; inset: 0; animation: words 10s ease-in-out infinite; }
+.breath-words .out { animation-delay: -5s; }
+@keyframes words { 0%, 45% { opacity: 1; } 50%, 95% { opacity: 0; } 100% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .breath.on .breath-circle, .breath-words span { animation: none; }
+  .breath-words .out { display: none; }
+}

@@ -40,6 +40,13 @@ export interface DiaryEntry {
   text: string;
 }
 
+export interface Meditation {
+  id: string;
+  date: string; // YYYY-MM-DD local
+  createdAt: string;
+  minutes: number;
+}
+
 export interface ChatMsg {
   role: "user" | "assistant";
   content: string;
@@ -49,7 +56,7 @@ export interface Reading {
   id: string;
   date: string;
   createdAt: string;
-  kind?: "daily" | "chart"; // missing = daily
+  kind?: "daily" | "chart" | "dharma"; // missing = daily
   /** Full API conversation; messages[0] is the auto-generated request and isn't shown. */
   messages: ChatMsg[];
 }

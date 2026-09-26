@@ -3,7 +3,8 @@ import ReactMarkdown from "react-markdown";
 import { useT } from "../lib/i18n";
 import { describeCheckin, describeCosmos, describeDiary, describeProfile, describeRecent, describeSnapshot, type Snapshot } from "../lib/snapshot";
 import { uid } from "../lib/storage";
-import type { ChatMsg, CheckIn, CosmosData, DiaryEntry, Profile, Reading } from "../lib/types";
+import { describeDharma } from "../lib/dharma";
+import type { ChatMsg, CheckIn, CosmosData, DiaryEntry, Meditation, Profile, Reading } from "../lib/types";
 
 const CHART_REQUEST = {
   en: `Please give me a deep reading of my Tử Vi and Bát Tự charts together (about 700–900 words, Markdown), with these sections:
@@ -22,9 +23,33 @@ const CHART_REQUEST = {
 ### 🌱 Hướng phát triển (ngũ hành nên bồi bổ, thói quen, một thực hành)`,
 };
 
+const DHARMA_REQUEST = {
+  en: `Please look at my life today through the Buddha's teaching (about 450–600 words, Markdown), structured by the Four Noble Truths:
+### 🪷 Seeing clearly (Dukkha): what is arising in me today
+### 🔗 Its roots (Samudaya): the craving, aversion or confusion feeding it, and its conditions
+### 🌤 What can cease (Nirodha): impermanence, and what is already well
+### 🛤 The path today (Magga): one or two factors of the Noble Eightfold Path and one pāramitā, made concrete for my day
+### 🧘 Practice: one specific practice with clear steps
+### 🙏 A reminder to carry`,
+  vi: `Hãy soi chiếu cuộc sống hôm nay của mình qua lời Phật dạy (khoảng 450–600 chữ, Markdown), theo cấu trúc Tứ Diệu Đế:
+### 🪷 Nhìn rõ (Khổ đế): điều gì đang khởi lên trong mình hôm nay
+### 🔗 Gốc rễ (Tập đế): tham, sân hay si nào đang nuôi dưỡng nó, và các duyên của nó
+### 🌤 Điều có thể chấm dứt (Diệt đế): vô thường, và những điều đang tốt đẹp sẵn có
+### 🛤 Con đường hôm nay (Đạo đế): một hai chi của Bát Chánh Đạo và một hạnh Ba-la-mật, cụ thể cho ngày của mình
+### 🧘 Thực tập: một pháp thực tập cụ thể, có các bước rõ ràng
+### 🙏 Một lời nhắc mang theo`,
+};
+
+const LABELS = {
+  daily: { title: "guidanceTitle", intro: "guidanceIntro", button: "receive" },
+  chart: { title: "chartReadingTitle", intro: "chartReadingIntro", button: "receiveChart" },
+  dharma: { title: "dharmaReadingTitle", intro: "dharmaReadingIntro", button: "receiveDharma" },
+} as const;
+
 interface Props {
-  kind?: "daily" | "chart";
+  kind?: "daily" | "chart" | "dharma";
   diary: DiaryEntry[];
+  meditations: Meditation[];
   profile: Profile;
   snapshot: Snapshot;
   cosmos: CosmosData | null | undefined;
@@ -35,7 +60,7 @@ interface Props {
   onSave: (r: Reading) => void;
 }
 
-export default function GuidancePanel({ kind = "daily", diary, profile, snapshot, cosmos, checkin, recent, reading, today, onSave }: Props) {
+export default function GuidancePanel({ kind = "daily", diary, meditations, profile, snapshot, cosmos, checkin, recent, reading, today, onSave }: Props) {
   const { t, lang } = useT();
   const [messages, setMessages] = useState<ChatMsg[]>(reading?.messages ?? []);
   const [pending, setPending] = useState<string | null>(null);
@@ -58,7 +83,7 @@ export default function GuidancePanel({ kind = "daily", diary, profile, snapshot
   }, [pending]);
 
   const buildContext = () =>
-    [describeProfile(profile), describeSnapshot(snapshot), describeCosmos(cosmos ?? null), describeRecent(recent), describeDiary(diary, today)]
+    [describeProfile(profile), describeSnapshot(snapshot), describeCosmos(cosmos ?? null), describeRecent(recent), describeDiary(diary, today), describeDharma(snapshot.now, checkin, meditations)]
       .filter(Boolean)
       .join("\n\n");
 
@@ -111,6 +136,10 @@ export default function GuidancePanel({ kind = "daily", diary, profile, snapshot
       send([{ role: "user", content: CHART_REQUEST[lang] }]);
       return;
     }
+    if (kind === "dharma") {
+      send([{ role: "user", content: `${DHARMA_REQUEST[lang]}\n\nMy check-in today:\n${describeCheckin(checkin)}` }]);
+      return;
+    }
     const ask = lang === "vi" ? "Hãy cho mình lời luận giải hôm nay." : "Please give me today's reading.";
     send([{ role: "user", content: `${ask}\n\nMy check-in today:\n${describeCheckin(checkin)}` }]);
   };
@@ -130,16 +159,16 @@ export default function GuidancePanel({ kind = "daily", diary, profile, snapshot
     <section className="card guidance">
       <div className="guidance-head">
         <div>
-          <h2>✦ {t(kind === "chart" ? "chartReadingTitle" : "guidanceTitle")}</h2>
-          <p className="muted small">{t(kind === "chart" ? "chartReadingIntro" : "guidanceIntro")}</p>
+          <h2>{kind === "dharma" ? "☸" : "✦"} {t(LABELS[kind].title)}</h2>
+          <p className="muted small">{t(LABELS[kind].intro)}</p>
         </div>
         {busy ? (
           <button className="ghost" onClick={() => abortRef.current?.abort()}>■ {t("stop")}</button>
         ) : (
-          <button className="primary" onClick={requestReading}>{messages.length ? t("regenerate") : t(kind === "chart" ? "receiveChart" : "receive")}</button>
+          <button className="primary" onClick={requestReading}>{messages.length ? t("regenerate") : t(LABELS[kind].button)}</button>
         )}
       </div>
-      {kind === "daily" && !checkin && !messages.length && <p className="hint">💡 {t("checkinFirst")}</p>}
+      {kind !== "chart" && !checkin && !messages.length && <p className="hint">💡 {t("checkinFirst")}</p>}
 
       <div className="thread">
         {visible.map((m, i) =>

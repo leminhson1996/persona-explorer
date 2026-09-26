@@ -22,6 +22,7 @@ export const UI = {
   tabProfile: bi("Profile", "Hồ sơ"),
   tabJournal: bi("Journal", "Nhật ký"),
   tabCharts: bi("Destiny charts", "Tử Vi & Bát Tự"),
+  tabDharma: bi("Buddhist path", "Phật pháp"),
 
   // Profile
   profileTitle: bi("Your profile", "Hồ sơ của bạn"),
@@ -180,6 +181,43 @@ export const UI = {
     "Lá số theo trường phái Việt Nam với chính tinh và các phụ tinh chính; hãy xem như tấm gương để chiêm nghiệm.",
   ),
 
+  // Buddhist path
+  dharmaTitle: bi("The Buddhist path", "Góc nhìn Phật pháp"),
+  dharmaIntro: bi(
+    "Not fortune-telling: a look at your mind today through the Buddha's teaching, and a way to practice.",
+    "Không phải bói toán: nhìn vào tâm của bạn hôm nay qua lời Phật dạy, và một con đường để thực tập.",
+  ),
+  buddhistEra: bi("Buddhist Era", "Phật lịch"),
+  socDay: bi("Sóc day (new moon)", "Ngày Sóc (mùng 1)"),
+  vongDay: bi("Vọng day (full moon)", "Ngày Vọng (rằm)"),
+  thapTrai: bi("Precept / vegetarian day (thập trai)", "Ngày chay (thập trai)"),
+  ordinaryDay: bi("An ordinary day, a good day to practice", "Một ngày bình thường, ngày nào cũng là ngày tốt để tu tập"),
+  upcoming: bi("Upcoming", "Sắp tới"),
+  mindToday: bi("Your mind today", "Tâm của bạn hôm nay"),
+  mindNeedsCheckin: bi("Save today's check-in to see which mind states are present.", "Lưu cảm nhận hôm nay để nhận diện các trạng thái tâm."),
+  hindrancesTitle: bi("To care for (triền cái)", "Cần chăm sóc (triền cái)"),
+  wholesomeTitle: bi("Wholesome seeds present", "Hạt giống thiện đang có"),
+  noHindrance: bi("No hindrance stands out. Keep watering the good seeds.", "Không có triền cái nổi bật. Hãy tiếp tục tưới tẩm hạt giống lành."),
+  antidote: bi("Antidote", "Pháp đối trị"),
+  tryThis: bi("Try", "Thực tập"),
+  meditationTitle: bi("Meditation timer", "Đồng hồ thiền"),
+  meditationIntro: bi("Sit comfortably, back upright, and follow your breath.", "Ngồi thoải mái, lưng thẳng, theo dõi hơi thở."),
+  minutes: bi("{n} min", "{n} phút"),
+  start: bi("Begin", "Bắt đầu"),
+  pause: bi("Pause", "Tạm dừng"),
+  resume: bi("Continue", "Tiếp tục"),
+  finishEarly: bi("End & save", "Kết thúc & lưu"),
+  sessionSaved: bi("🙏 Session saved", "🙏 Đã ghi lại buổi thiền"),
+  weekPractice: bi("This week: {s} sessions · {m} minutes", "Tuần này: {s} buổi · {m} phút"),
+  breatheIn: bi("Breathing in, I know I'm breathing in", "Thở vào, tôi biết tôi đang thở vào"),
+  breatheOut: bi("Breathing out, I smile", "Thở ra, tôi mỉm cười"),
+  dharmaReadingTitle: bi("Dharma guidance for today", "Lời Pháp cho hôm nay"),
+  dharmaReadingIntro: bi(
+    "Claude looks at what you're living through the Four Noble Truths and the Noble Eightfold Path.",
+    "Claude soi chiếu những gì bạn đang trải qua qua Tứ Diệu Đế và Bát Chánh Đạo.",
+  ),
+  receiveDharma: bi("Receive Dharma guidance", "Nhận lời Pháp"),
+
   // Diary
   diaryTitle: bi("Write your diary", "Viết nhật ký"),
   diaryPlaceholder: bi(
@@ -202,6 +240,7 @@ export const UI = {
   journalEmpty: bi("No entries yet. Your check-ins and readings will appear here.", "Chưa có gì. Các lần ghi cảm nhận và luận giải sẽ xuất hiện ở đây."),
   readingLabel: bi("Reading", "Luận giải"),
   chartReadingLabel: bi("Chart reading", "Luận giải lá số"),
+  dharmaReadingLabel: bi("Dharma guidance", "Lời Pháp"),
   checkinLabel: bi("Check-in", "Cảm nhận"),
   delete: bi("Delete", "Xóa"),
   streak: bi("{n}-day streak", "Chuỗi {n} ngày liên tục"),

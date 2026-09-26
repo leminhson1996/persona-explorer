@@ -111,7 +111,7 @@ export default function Journal({ checkins, readings, diary, onDeleteCheckin, on
               <div key={r.id} className="entry-reading">
                 <p>
                   <button className="link" onClick={() => setOpen(open === r.id ? null : r.id)}>
-                    {open === r.id ? "▾" : "▸"} ✦ {t(r.kind === "chart" ? "chartReadingLabel" : "readingLabel")}
+                    {open === r.id ? "▾" : "▸"} ✦ {t(r.kind === "chart" ? "chartReadingLabel" : r.kind === "dharma" ? "dharmaReadingLabel" : "readingLabel")}
                   </button>
                   <button className="link danger-link" onClick={() => onDeleteReading(r.id)}>{t("delete")}</button>
                 </p>
