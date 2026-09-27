@@ -540,3 +540,21 @@ button:disabled { opacity: 0.5; cursor: default; }
 .count-fill { display: block; height: 8px; background: var(--series); border-radius: 0 4px 4px 0; }
 .kind-tiles { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0; }
 .kind-tile { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 10px; background: var(--field); }
+
+/* ---------- Physiognomy ---------- */
+.k-physio { color: var(--accent); }
+.physio-slots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 12px 0; }
+@media (max-width: 860px) { .physio-slots { grid-template-columns: 1fr; } }
+.physio-slot { display: grid; gap: 8px; align-content: start; padding: 12px; border-radius: 14px; background: var(--field); border: 1px solid var(--field-border); }
+.physio-slot h4 { margin: 0; }
+.physio-empty { display: grid; place-items: center; aspect-ratio: 3 / 4; border-radius: 10px; border: 1.5px dashed var(--field-border); font-size: 3rem; opacity: 0.6; }
+.physio-empty.shimmer { font-size: 0.9rem; opacity: 1; }
+.physio-canvas { width: 100%; height: auto; border-radius: 10px; display: block; }
+.physio-summary { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; }
+.physio-summary .kv { min-width: 220px; flex: 1; }
+.physio-thumb { width: 120px; height: 150px; object-fit: cover; border-radius: 10px; border: 1px solid var(--card-border); }
+.tips { margin: 6px 0 10px; }
+.modal { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; background: rgba(5, 6, 15, 0.75); padding: 16px; }
+.modal-body { width: min(720px, 100%); display: grid; gap: 12px; }
+.modal video { width: 100%; max-height: 70vh; border-radius: 12px; background: #000; object-fit: contain; }
+.modal video.mirror { transform: scaleX(-1); }

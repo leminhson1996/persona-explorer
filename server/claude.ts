@@ -6,10 +6,18 @@ import os from "node:os";
 import readline from "node:readline";
 import Anthropic from "@anthropic-ai/sdk";
 
+export interface ImageInput {
+  mediaType: "image/jpeg" | "image/png" | "image/webp";
+  data: string; // base64, no data: prefix
+}
+
 export interface ChatTurn {
   role: "user" | "assistant";
   content: string;
+  images?: ImageInput[];
 }
+
+const allImages = (messages: ChatTurn[]) => messages.flatMap((m) => m.images ?? []);
 
 export type Backend = "cli" | "api";
 
@@ -44,6 +52,7 @@ async function* streamCli(system: string, messages: ChatTurn[], signal: AbortSig
     "--output-format", "stream-json",
     "--verbose",
     "--include-partial-messages",
+    ...(allImages(messages).length ? ["--input-format", "stream-json"] : []),
     "--system-prompt", system,
     "--tools", "",
     "--no-session-persistence",
@@ -68,7 +77,17 @@ async function* streamCli(system: string, messages: ChatTurn[], signal: AbortSig
       )));
     child.on("close", resolve);
   });
-  child.stdin.end(transcript(messages));
+  const images = allImages(messages);
+  if (images.length) {
+    // Photos go in as image blocks alongside the transcript (stream-json input).
+    const content = [
+      ...images.map((im) => ({ type: "image", source: { type: "base64", media_type: im.mediaType, data: im.data } })),
+      { type: "text", text: transcript(messages) },
+    ];
+    child.stdin.end(JSON.stringify({ type: "user", message: { role: "user", content } }) + "\n");
+  } else {
+    child.stdin.end(transcript(messages));
+  }
 
   let resultError: string | null = null;
   try {
@@ -114,7 +133,17 @@ async function* streamApi(system: string, messages: ChatTurn[], signal: AbortSig
       thinking: { type: "adaptive" },
       output_config: { effort: EFFORT },
       system,
-      messages,
+      messages: messages.map((m): Anthropic.Beta.BetaMessageParam =>
+        m.images?.length && m.role === "user"
+          ? {
+              role: "user",
+              content: [
+                ...m.images.map((im) => ({ type: "image" as const, source: { type: "base64" as const, media_type: im.mediaType, data: im.data } })),
+                { type: "text" as const, text: m.content },
+              ],
+            }
+          : { role: m.role, content: m.content },
+      ),
     },
     { signal },
   );

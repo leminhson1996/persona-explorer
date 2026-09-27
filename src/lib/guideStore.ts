@@ -4,6 +4,7 @@ import { useSyncExternalStore } from "react";
 import { uid } from "./storage";
 import type { ChatMsg, ContextScope, Reading, ReadingKind } from "./types";
 import type { TarotDraw } from "./tarot";
+import type { PhysioRecord } from "./physiognomy";
 
 export interface Session {
   kind: ReadingKind;
@@ -17,6 +18,7 @@ export interface Session {
   retry: string | null; // a follow-up that got no answer, to put back in the input box
   contextScope: ContextScope; // fixed for the whole conversation, so follow-ups see the same context
   tarot?: TarotDraw;
+  physio?: PhysioRecord;
 }
 
 type State = Partial<Record<ReadingKind, Session>>;
@@ -33,8 +35,12 @@ function update(kind: ReadingKind, patch: Partial<Session>) {
   listeners.forEach((l) => l());
 }
 
+// Photos are stripped before anything is written to my_data; only the count is kept.
+const stripImages = (messages: ChatMsg[]): ChatMsg[] =>
+  messages.map(({ images, ...m }) => (images?.length ? { ...m, imageCount: images.length } : m));
+
 function persist(s: Session, messages: ChatMsg[], status: Reading["status"]) {
-  saver({ id: s.readingId, date: s.date, createdAt: s.createdAt, kind: s.kind, messages, status, ...(s.contextScope !== "full" ? { scope: s.contextScope } : {}), ...(s.tarot ? { tarot: s.tarot } : {}) });
+  saver({ id: s.readingId, date: s.date, createdAt: s.createdAt, kind: s.kind, messages: stripImages(messages), status, ...(s.contextScope !== "full" ? { scope: s.contextScope } : {}), ...(s.tarot ? { tarot: s.tarot } : {}), ...(s.physio ? { physio: s.physio } : {}) });
 }
 
 export const guide = {
@@ -65,16 +71,17 @@ export const guide = {
         retry: null,
         contextScope: saved?.scope ?? "full",
         tarot: saved?.tarot,
+        physio: saved?.physio,
       },
     };
     listeners.forEach((l) => l());
   },
 
   /** Start a brand-new conversation (e.g. "Read again"). */
-  restart(kind: ReadingKind, date: string, scope: ContextScope = "full", tarot?: TarotDraw) {
+  restart(kind: ReadingKind, date: string, scope: ContextScope = "full", tarot?: TarotDraw, physio?: PhysioRecord) {
     const s = state[kind];
     if (!s || s.pending !== null) return;
-    update(kind, { readingId: uid(), createdAt: new Date().toISOString(), date, messages: [], error: null, contextScope: scope, tarot });
+    update(kind, { readingId: uid(), createdAt: new Date().toISOString(), date, messages: [], error: null, contextScope: scope, tarot, physio });
   },
 
   clearRetry(kind: ReadingKind) {

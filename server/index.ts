@@ -1,5 +1,6 @@
 import "dotenv/config";
 import path from "node:path";
+import { promises as fs } from "node:fs";
 import { fileURLToPath } from "node:url";
 import express from "express";
 import { getCosmos } from "./nasa";
@@ -10,6 +11,40 @@ import { getEnvironmentDaily, getEnvironmentNow } from "./environment";
 
 const app = express();
 app.use(express.json({ limit: "20mb" }));
+
+// ---------- MediaPipe (face & hand landmarks run in the browser) ----------
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+app.use("/mediapipe/wasm", express.static(path.resolve(here, "../node_modules/@mediapipe/tasks-vision/wasm"), { maxAge: "30d" }));
+
+const MODELS: Record<string, string> = {
+  "face_landmarker.task": "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+  "hand_landmarker.task": "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
+  "hair_segmenter.tflite": "https://storage.googleapis.com/mediapipe-models/image_segmenter/hair_segmenter/float32/latest/hair_segmenter.tflite",
+};
+const MODEL_DIR = path.resolve(here, "../.cache/models");
+
+// Models are downloaded once from Google and then served locally.
+app.get("/mediapipe/models/:name", async (req, res) => {
+  const url = MODELS[req.params.name];
+  if (!url) return void res.status(404).end();
+  const file = path.join(MODEL_DIR, req.params.name);
+  try {
+    await fs.access(file);
+  } catch {
+    try {
+      const r = await fetch(url, { signal: AbortSignal.timeout(60000) });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      await fs.mkdir(MODEL_DIR, { recursive: true });
+      await fs.writeFile(`${file}.tmp`, Buffer.from(await r.arrayBuffer()));
+      await fs.rename(`${file}.tmp`, file);
+    } catch (err) {
+      console.error("[mediapipe]", err);
+      return void res.status(502).json({ error: "Couldn't download the MediaPipe model" });
+    }
+  }
+  res.sendFile(file, { maxAge: "30d", dotfiles: "allow" });
+});
 
 // ---------- Personal data in ./my_data ----------
 
@@ -85,9 +120,13 @@ interface GuideBody {
 
 app.post("/api/guide", async (req, res) => {
   const body = req.body as GuideBody;
+  const imagesOk = (m: ChatTurn) =>
+    m.images === undefined ||
+    (Array.isArray(m.images) && m.images.length <= 4 &&
+      m.images.every((im) => ["image/jpeg", "image/png", "image/webp"].includes(im.mediaType) && typeof im.data === "string" && im.data.length < 8_000_000));
   const valid =
     body && typeof body.context === "string" && Array.isArray(body.messages) && body.messages.length > 0 &&
-    body.messages.every((m) => (m.role === "user" || m.role === "assistant") && typeof m.content === "string" && m.content.length > 0) &&
+    body.messages.every((m) => (m.role === "user" || m.role === "assistant") && typeof m.content === "string" && m.content.length > 0 && imagesOk(m)) &&
     body.messages[body.messages.length - 1].role === "user";
   if (!valid) {
     res.status(400).json({ error: "Invalid request" });

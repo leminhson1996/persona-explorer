@@ -12,6 +12,7 @@ export const KIND_META: Record<ReadingKind, { icon: string; label: Bi; cls: stri
   dharma: { icon: "☸", label: { en: "Buddhist path", vi: "Phật pháp" }, cls: "k-dharma" },
   tarot: { icon: "🃏", label: { en: "Tarot", vi: "Tarot" }, cls: "k-tarot" },
   progress: { icon: "📈", label: { en: "Growth review", vi: "Tổng kết" }, cls: "k-progress" },
+  physio: { icon: "👤", label: { en: "Face & palm", vi: "Nhân tướng" }, cls: "k-physio" },
 };
 
 const kindOf = (r: Reading): ReadingKind => r.kind ?? "daily";
@@ -62,7 +63,7 @@ export default function Library({ readings: savedReadings, onDelete, onContinue 
 
   const sorted = useMemo(() => [...readings].sort((a, b) => b.createdAt.localeCompare(a.createdAt)), [readings]);
   const counts = useMemo(() => {
-    const c: Record<ReadingKind | "all", number> = { all: readings.length, daily: 0, chart: 0, dharma: 0, tarot: 0, progress: 0 };
+    const c: Record<ReadingKind | "all", number> = { all: readings.length, daily: 0, chart: 0, dharma: 0, tarot: 0, progress: 0, physio: 0 };
     readings.forEach((r) => c[kindOf(r)]++);
     return c;
   }, [readings]);
@@ -119,7 +120,7 @@ export default function Library({ readings: savedReadings, onDelete, onContinue 
         <h2>📚 {t("libTitle")}</h2>
         <input className="lib-search" type="search" placeholder={t("libSearch")} value={query} onChange={(e) => setQuery(e.target.value)} />
         <div className="chips lib-filters" role="tablist">
-          {(["all", "daily", "chart", "dharma", "tarot", "progress"] as const).map((k) => (
+          {(["all", "daily", "chart", "dharma", "tarot", "physio", "progress"] as const).map((k) => (
             <button key={k} role="tab" aria-selected={filter === k} className={`chip ${filter === k ? "on" : ""}`} onClick={() => setFilter(k)}>
               {k === "all" ? t("libAll") : `${KIND_META[k].icon} ${tr(KIND_META[k].label)}`} <span className="count">{counts[k]}</span>
             </button>
@@ -194,6 +195,9 @@ export default function Library({ readings: savedReadings, onDelete, onContinue 
                 </button>
               </div>
             </div>
+            {selected.physio?.thumbnails && (
+              <div className="lib-cards">{selected.physio.thumbnails.map((src, i) => <img key={i} src={src} alt="" className="physio-thumb" />)}</div>
+            )}
             {selected.tarot && (
               <div className="lib-tarot">
                 {selected.tarot.question && <p><strong>❓ {selected.tarot.question}</strong></p>}

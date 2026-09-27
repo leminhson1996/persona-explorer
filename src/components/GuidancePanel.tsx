@@ -6,7 +6,7 @@ import ChatThread from "./ChatThread";
 import { describeDharma } from "../lib/dharma";
 import { describeEnvironment } from "../lib/environment";
 import { describeInsights } from "../lib/insights";
-import type { ChatMsg, CheckIn, ContextScope, CosmosData, DiaryEntry, EnvNow, Meditation, Profile, Reading, ReadingKind } from "../lib/types";
+import type { ChatMsg, CheckIn, ContextScope, CosmosData, DiaryEntry, EnvNow, Meditation, Profile, Reading } from "../lib/types";
 
 const CHART_REQUEST = {
   en: `Please give me a deep reading of my Tử Vi and Bát Tự charts together (about 700–900 words, Markdown), with these sections:
@@ -92,7 +92,7 @@ export function buildContextFor(ctx: ContextScope, x: ContextSources): string {
 }
 
 interface Props {
-  kind?: Exclude<ReadingKind, "tarot" | "progress">;
+  kind?: "daily" | "chart" | "dharma";
   diary: DiaryEntry[];
   meditations: Meditation[];
   profile: Profile;

@@ -1,5 +1,6 @@
 import type { Lang } from "./i18n";
 import type { TarotDraw } from "./tarot";
+import type { PhysioRecord } from "./physiognomy";
 
 export interface Place {
   lat: number;
@@ -99,12 +100,19 @@ export interface Meditation {
   minutes: number;
 }
 
+export interface ChatImage {
+  mediaType: "image/jpeg" | "image/png" | "image/webp";
+  data: string; // base64
+}
+
 export interface ChatMsg {
   role: "user" | "assistant";
   content: string;
+  images?: ChatImage[]; // sent to Claude, never written to my_data
+  imageCount?: number; // how many photos were attached (kept after the images are stripped)
 }
 
-export type ReadingKind = "daily" | "chart" | "dharma" | "tarot" | "progress";
+export type ReadingKind = "daily" | "chart" | "dharma" | "tarot" | "progress" | "physio";
 /** What a reading was allowed to see: everything, the profile only, or just the birth data. */
 export type ContextScope = "full" | "profile" | "birth" | "cards";
 
@@ -115,7 +123,8 @@ export interface Reading {
   kind?: ReadingKind; // missing = daily
   status?: "streaming" | "done" | "interrupted";
   scope?: ContextScope; // missing = full
-  tarot?: TarotDraw; // the question and cards, for tarot readings // "streaming" left over after a reload means it was cut off
+  tarot?: TarotDraw; // the question and cards, for tarot readings
+  physio?: PhysioRecord; // measurements (and optional thumbnails) for face/hand readings // "streaming" left over after a reload means it was cut off
   /** Full API conversation; messages[0] is the auto-generated request and isn't shown. */
   messages: ChatMsg[];
 }

@@ -13,6 +13,7 @@ It combines:
 | Tử Vi Đẩu Số | 12 palaces, Mệnh/Thân, Cục, 14 main stars, key auxiliary stars (Tả Hữu, Xương Khúc, Lộc Tồn, Kình Đà, Khôi Việt, Không Kiếp, Thiên Mã), Tứ Hóa, Mệnh chủ/Thân chủ, đại hạn, lưu niên | `src/lib/tuvi.ts` (Vietnamese school) |
 | Buddhist path (Phật pháp) | Phật lịch, Sóc/Vọng and thập trai days, upcoming Buddhist holidays (Phật Đản, Vu Lan, vía Quán Thế Âm…), mind states from your check-in (five hindrances + sorrow, with antidotes), meditation timer with bell and practice log, and Claude guidance structured by the Four Noble Truths | `src/lib/dharma.ts` |
 | Tarot | Full 78-card Rider–Waite–Smith deck (bilingual names, upright/reversed meanings), 4 spreads (card of the day, past/present/future, situation/challenge/advice, Celtic Cross), cryptographic shuffle, pick your own cards; Claude reads the spread with a choice of cards-only, +profile or full context | `src/lib/tarot.ts` |
+| Face & palm (Nhân tướng) | Photos of your face and palms (camera or upload). In the browser, MediaPipe Face Landmarker (478 points), Hair Segmenter (real hairline) and Hand Landmarker (21 points, 3D) measure the Three courts, face shape by the five elements, eye/brow/nose/mouth proportions, symmetry, hand type, finger ratios (2D:4D). Claude then reads the photos with Eastern physiognomy (Tam đình, Ngũ nhạc, Ngũ quan, 12 palaces) and palmistry (lines, mounts). Own photos only; photos are never stored unless you opt into small thumbnails | `src/lib/physiognomy.ts` |
 | Nature | Season, sunrise/sunset, daylight, next full/new moon | `astronomy-engine` |
 | Weather & air | Temperature, feels-like/heat stress, humidity, 24h pressure change, UV (and high-UV hours), rain, US AQI and PM2.5, plus body-clock tips from real sunrise/sunset | Open-Meteo (free, no key) |
 | Sky events | Planets visible this evening and before dawn from your location, next meteor showers (with Moon brightness), next lunar/solar eclipses and the next one visible where you live | `astronomy-engine` |
@@ -63,6 +64,10 @@ Open http://localhost:5173.
 npm run build
 npm start        # serves the built app + API on http://localhost:8787
 ```
+
+## Photos & privacy
+
+Face and palm photos are measured locally in your browser. The MediaPipe models are downloaded once into `.cache/models/` and served by the local server. For the reading itself, the photos are sent to Claude. They are never written to `my_data/`: only the measurements and the reading are saved, plus small thumbnails if you tick that option. Physiognomy and palmistry are cultural traditions, not science, and the guide is instructed never to infer ethnicity, health, lifespan, orientation or attractiveness.
 
 ## Your data
 
