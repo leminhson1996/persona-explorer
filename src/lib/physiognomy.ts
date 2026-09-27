@@ -2,6 +2,7 @@
 // (Tam đình, Ngũ hành face shapes, Ngũ quan) and palmistry hand types. Runs fully in the browser.
 import type { FaceLandmarker, HandLandmarker, ImageSegmenter, NormalizedLandmark, Landmark } from "@mediapipe/tasks-vision";
 import type { Bi } from "./i18n";
+import type { VoiceMetrics, VoiceTone } from "./voice";
 
 // ---------- Records kept with a reading ----------
 
@@ -42,9 +43,12 @@ export interface HandMetrics {
 }
 
 export interface PhysioRecord {
-  subject: "face" | "hand" | "both";
+  subject: string; // e.g. "face+side+hand+voice"
   face?: FaceMetrics;
   hands?: HandMetrics[];
+  side?: boolean; // a side-profile photo (ears, temples) was included
+  voice?: VoiceMetrics;
+  voiceTone?: VoiceTone;
   thumbnails?: string[]; // small JPEG data URLs, only if the person chose to save them
 }
 

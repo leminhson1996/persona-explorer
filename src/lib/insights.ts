@@ -5,16 +5,33 @@ import type { CheckIn, CheckInEnv } from "./types";
 
 export type Outcome = "energy" | "mood";
 
-export const FACTORS: { key: keyof CheckInEnv; label: Bi; unit: string; highLabel: Bi; lowLabel: Bi }[] = [
-  { key: "aqi", label: { en: "Air pollution (AQI)", vi: "Ô nhiễm không khí (AQI)" }, unit: "", highLabel: { en: "more polluted days", vi: "ngày ô nhiễm hơn" }, lowLabel: { en: "cleaner days", vi: "ngày trong lành hơn" } },
-  { key: "feelsLikeMax", label: { en: "Heat (feels-like max)", vi: "Nóng bức (nhiệt độ cảm nhận)" }, unit: "°C", highLabel: { en: "hotter days", vi: "ngày nóng hơn" }, lowLabel: { en: "cooler days", vi: "ngày mát hơn" } },
-  { key: "humidity", label: { en: "Humidity", vi: "Độ ẩm" }, unit: "%", highLabel: { en: "more humid days", vi: "ngày ẩm hơn" }, lowLabel: { en: "drier days", vi: "ngày khô hơn" } },
-  { key: "pressureDelta24h", label: { en: "Pressure change (24h)", vi: "Thay đổi áp suất (24h)" }, unit: " hPa", highLabel: { en: "rising-pressure days", vi: "ngày áp suất tăng" }, lowLabel: { en: "falling-pressure days", vi: "ngày áp suất giảm" } },
-  { key: "rainMm", label: { en: "Rain", vi: "Lượng mưa" }, unit: " mm", highLabel: { en: "rainier days", vi: "ngày mưa nhiều" }, lowLabel: { en: "drier days", vi: "ngày ít mưa" } },
-  { key: "uvMax", label: { en: "Sunshine (UV max)", vi: "Nắng (UV cao nhất)" }, unit: "", highLabel: { en: "sunnier days", vi: "ngày nắng hơn" }, lowLabel: { en: "duller days", vi: "ngày ít nắng" } },
-  { key: "kp", label: { en: "Geomagnetic activity (Kp)", vi: "Hoạt động địa từ (Kp)" }, unit: "", highLabel: { en: "more active days", vi: "ngày địa từ mạnh hơn" }, lowLabel: { en: "quieter days", vi: "ngày địa từ yên tĩnh" } },
-  { key: "moonIllumination", label: { en: "Moon brightness (full moon)", vi: "Độ sáng Mặt Trăng (trăng tròn)" }, unit: "", highLabel: { en: "near full moon", vi: "gần trăng tròn" }, lowLabel: { en: "near new moon", vi: "gần trăng non" } },
-  { key: "daylightHours", label: { en: "Day length", vi: "Độ dài ban ngày" }, unit: " h", highLabel: { en: "longer days", vi: "ngày dài hơn" }, lowLabel: { en: "shorter days", vi: "ngày ngắn hơn" } },
+export interface Factor {
+  key: string;
+  group: "world" | "voice";
+  label: Bi;
+  unit: string;
+  highLabel: Bi;
+  lowLabel: Bi;
+  get: (c: CheckIn) => number | null | undefined;
+}
+
+const env = (k: keyof CheckInEnv) => (c: CheckIn) => c.env?.[k] as number | null | undefined;
+
+export const FACTORS: Factor[] = [
+  { key: "aqi", group: "world", get: env("aqi"), label: { en: "Air pollution (AQI)", vi: "Ô nhiễm không khí (AQI)" }, unit: "", highLabel: { en: "more polluted days", vi: "ngày ô nhiễm hơn" }, lowLabel: { en: "cleaner days", vi: "ngày trong lành hơn" } },
+  { key: "feelsLikeMax", group: "world", get: env("feelsLikeMax"), label: { en: "Heat (feels-like max)", vi: "Nóng bức (nhiệt độ cảm nhận)" }, unit: "°C", highLabel: { en: "hotter days", vi: "ngày nóng hơn" }, lowLabel: { en: "cooler days", vi: "ngày mát hơn" } },
+  { key: "humidity", group: "world", get: env("humidity"), label: { en: "Humidity", vi: "Độ ẩm" }, unit: "%", highLabel: { en: "more humid days", vi: "ngày ẩm hơn" }, lowLabel: { en: "drier days", vi: "ngày khô hơn" } },
+  { key: "pressureDelta24h", group: "world", get: env("pressureDelta24h"), label: { en: "Pressure change (24h)", vi: "Thay đổi áp suất (24h)" }, unit: " hPa", highLabel: { en: "rising-pressure days", vi: "ngày áp suất tăng" }, lowLabel: { en: "falling-pressure days", vi: "ngày áp suất giảm" } },
+  { key: "rainMm", group: "world", get: env("rainMm"), label: { en: "Rain", vi: "Lượng mưa" }, unit: " mm", highLabel: { en: "rainier days", vi: "ngày mưa nhiều" }, lowLabel: { en: "drier days", vi: "ngày ít mưa" } },
+  { key: "uvMax", group: "world", get: env("uvMax"), label: { en: "Sunshine (UV max)", vi: "Nắng (UV cao nhất)" }, unit: "", highLabel: { en: "sunnier days", vi: "ngày nắng hơn" }, lowLabel: { en: "duller days", vi: "ngày ít nắng" } },
+  { key: "kp", group: "world", get: env("kp"), label: { en: "Geomagnetic activity (Kp)", vi: "Hoạt động địa từ (Kp)" }, unit: "", highLabel: { en: "more active days", vi: "ngày địa từ mạnh hơn" }, lowLabel: { en: "quieter days", vi: "ngày địa từ yên tĩnh" } },
+  { key: "moonIllumination", group: "world", get: (c) => c.env?.moonIllumination ?? moonIlluminationOn(c.date), label: { en: "Moon brightness (full moon)", vi: "Độ sáng Mặt Trăng (trăng tròn)" }, unit: "", highLabel: { en: "near full moon", vi: "gần trăng tròn" }, lowLabel: { en: "near new moon", vi: "gần trăng non" } },
+  { key: "daylightHours", group: "world", get: env("daylightHours"), label: { en: "Day length", vi: "Độ dài ban ngày" }, unit: " h", highLabel: { en: "longer days", vi: "ngày dài hơn" }, lowLabel: { en: "shorter days", vi: "ngày ngắn hơn" } },
+  // Voice markers: does your voice mirror how you feel?
+  { key: "voicePitch", group: "voice", get: (c) => c.voice?.pitchHz, label: { en: "Voice pitch", vi: "Cao độ giọng nói" }, unit: " Hz", highLabel: { en: "higher-voice days", vi: "ngày giọng cao hơn" }, lowLabel: { en: "lower-voice days", vi: "ngày giọng trầm hơn" } },
+  { key: "voicePace", group: "voice", get: (c) => c.voice?.syllablesPerSec, label: { en: "Speaking pace", vi: "Tốc độ nói" }, unit: "/s", highLabel: { en: "faster-speaking days", vi: "ngày nói nhanh hơn" }, lowLabel: { en: "slower-speaking days", vi: "ngày nói chậm hơn" } },
+  { key: "voiceClarity", group: "voice", get: (c) => c.voice?.hnrDb, label: { en: "Voice clarity (HNR)", vi: "Độ trong của giọng (HNR)" }, unit: " dB", highLabel: { en: "clearer-voice days", vi: "ngày giọng trong hơn" }, lowLabel: { en: "hoarser-voice days", vi: "ngày giọng khàn hơn" } },
+  { key: "voiceLively", group: "voice", get: (c) => c.voice?.pitchVarSt, label: { en: "Intonation liveliness", vi: "Độ sinh động của ngữ điệu" }, unit: " st", highLabel: { en: "livelier-voice days", vi: "ngày ngữ điệu sinh động" }, lowLabel: { en: "flatter-voice days", vi: "ngày ngữ điệu đều đều" } },
 ];
 
 export const MIN_DAYS = 10;
@@ -44,11 +61,11 @@ const median = (xs: number[]) => {
 const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
 
 export interface Finding {
-  key: keyof CheckInEnv;
+  key: string;
   n: number;
   r: number;
-  /** |r| beyond 2.5/√n: stricter than the usual 95% line (≈2/√n) because we test ~9 factors at once,
-   *  which otherwise makes one chance "finding" likely. */
+  /** |r| beyond 2.7/√n: stricter than the usual 95% line (≈2/√n) because we test ~13 factors at once,
+   *  which otherwise makes a chance "finding" likely. */
   reliable: boolean;
   strength: "none" | "weak" | "moderate" | "strong";
   highMean: number;
@@ -66,7 +83,7 @@ export function analyze(checkins: CheckIn[], outcome: Outcome) {
   for (const f of FACTORS) {
     const pairs = days
       .map((c) => {
-        const x = f.key === "moonIllumination" ? c.env?.moonIllumination ?? moonIlluminationOn(c.date) : c.env?.[f.key];
+        const x = f.get(c);
         return typeof x === "number" && !Number.isNaN(x) ? { x, y: outcome === "energy" ? c.energy : c.mood } : null;
       })
       .filter((p): p is { x: number; y: number } => p !== null);
@@ -83,7 +100,7 @@ export function analyze(checkins: CheckIn[], outcome: Outcome) {
       key: f.key,
       n: pairs.length,
       r,
-      reliable: abs >= 2.5 / Math.sqrt(pairs.length) && abs >= 0.2,
+      reliable: abs >= 2.7 / Math.sqrt(pairs.length) && abs >= 0.2,
       strength: abs >= 0.5 ? "strong" : abs >= 0.3 ? "moderate" : abs >= 0.2 ? "weak" : "none",
       highMean: mean(high),
       lowMean: mean(low),

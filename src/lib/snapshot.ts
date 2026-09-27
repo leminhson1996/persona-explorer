@@ -5,6 +5,7 @@ import * as lunar from "./lunar";
 import { computeBazi, TEN_GOD_MEANING } from "./bazi";
 import { computeTuVi } from "./tuvi";
 import { describeSkyEvents, skyEvents } from "./skyEvents";
+import { baseline, compareToBaseline } from "./voice";
 import { FEELINGS, MOODS } from "./i18n";
 import type { CheckIn, CosmosData, DiaryEntry, Place, Profile } from "./types";
 
@@ -202,8 +203,13 @@ export function describeProfile(p: Profile, opts: { birthOnly?: boolean } = {}):
   ].filter(Boolean).join("\n");
 }
 
-export function describeCheckin(c: CheckIn | undefined): string {
+export function describeCheckin(c: CheckIn | undefined, history: CheckIn[] = []): string {
   if (!c) return "They haven't checked in today.";
+  const base = baseline(history.filter((h) => h.date !== c.date && h.voice).map((h) => h.voice!));
+  const voiceLine = c.voice
+    ? `Voice sample: pitch ${c.voice.pitchHz} Hz, ${c.voice.syllablesPerSec} syllables/s, clarity (HNR) ${c.voice.hnrDb} dB, pauses ${Math.round(c.voice.pauseRatio * 100)}%` +
+      (base ? `; compared with their usual voice: ${compareToBaseline(c.voice, base).map((d) => d.text.en).join("; ") || "about the same"}` : " (no personal baseline yet)")
+    : "";
   const mood = MOODS.find((m) => m.value === c.mood);
   const feelings = c.feelings.map((id) => FEELINGS.find((f) => f.id === id)?.label.en ?? id).join(", ");
   return [
@@ -211,6 +217,7 @@ export function describeCheckin(c: CheckIn | undefined): string {
     feelings ? `Feelings: ${feelings}.` : "",
     c.focus ? `Working on today: ${c.focus}` : "",
     c.note ? `On their mind: ${c.note}` : "",
+    voiceLine,
   ].filter(Boolean).join("\n");
 }
 

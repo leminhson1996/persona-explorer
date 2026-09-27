@@ -7,8 +7,10 @@ import {
 } from "../lib/physiognomy";
 import type { ChatImage, ContextScope, Reading } from "../lib/types";
 import ChatThread from "./ChatThread";
+import VoiceRecorder from "./VoiceRecorder";
+import { TONES, describeVoice, voiceTone, type VoiceMetrics } from "../lib/voice";
 
-type SlotId = "face" | "left" | "right";
+type SlotId = "face" | "side" | "left" | "right";
 
 interface Slot {
   dataUrl: string; // downscaled JPEG sent to Claude
@@ -19,12 +21,14 @@ interface Slot {
   face?: FaceMetrics;
   hand?: HandMetrics;
   error?: Bi;
+  warning?: Bi;
 }
 
 // ---------- Draft (survives tab switches; photos stay in memory only) ----------
 
 interface Draft {
   slots: Partial<Record<SlotId, Slot>>;
+  voice?: VoiceMetrics;
   own: boolean;
   saveThumbs: boolean;
   view: "setup" | "reading";
@@ -42,10 +46,17 @@ const useDraft = () => useSyncExternalStore((l) => (listeners.add(l), () => void
 const L = {
   title: { en: "Physiognomy & palm reading", vi: "Nhân tướng học & xem chỉ tay" },
   intro: {
-    en: "Photograph your face and/or palms. Landmarks are measured in your browser with MediaPipe (478 face points, 21 hand points), then Claude reads the photos with Eastern physiognomy and palmistry.",
-    vi: "Chụp khuôn mặt và/hoặc lòng bàn tay. Các điểm mốc được đo ngay trong trình duyệt bằng MediaPipe (478 điểm trên mặt, 21 điểm trên tay), rồi Claude xem ảnh theo nhân tướng học Á Đông và thuật xem chỉ tay.",
+    en: "Add any of: your face (front and side), your palms, your voice. Landmarks and voice acoustics are measured in your browser (MediaPipe: 478 face points, hair segmentation, 21 hand points), then Claude reads them with Eastern physiognomy, palmistry and the Five Tones.",
+    vi: "Thêm bất kỳ phần nào: khuôn mặt (chính diện và góc nghiêng), lòng bàn tay, giọng nói. Điểm mốc và đặc tính giọng được đo ngay trong trình duyệt (MediaPipe: 478 điểm trên mặt, phân vùng tóc, 21 điểm trên tay), rồi Claude luận giải theo nhân tướng học Á Đông, thuật xem chỉ tay và Ngũ âm.",
   },
-  face: { en: "Face", vi: "Khuôn mặt" },
+  face: { en: "Face (front)", vi: "Khuôn mặt (chính diện)" },
+  side: { en: "Side profile", vi: "Góc nghiêng" },
+  sideHint: { en: "Turn 90° so one ear, the temple and your profile are visible; tuck hair behind the ear.", vi: "Quay nghiêng 90° để thấy rõ một bên tai, thái dương và đường nét nhìn nghiêng; vén tóc ra sau tai." },
+  sideFrontal: { en: "This looks like a front view; turn further to the side so the ear shows.", vi: "Ảnh này có vẻ nhìn thẳng; hãy quay nghiêng hơn để thấy tai." },
+  voice: { en: "Voice (thanh tướng)", vi: "Giọng nói (thanh tướng)" },
+  voiceHint: { en: "Eastern physiognomy reads the voice too: the Five Tones (Ngũ âm) and whether it comes “from the dantian”.", vi: "Nhân tướng học cũng xem giọng nói: Ngũ âm và giọng có “phát từ đan điền” hay không." },
+  tone: { en: "Tone", vi: "Âm" },
+  pace: { en: "Pace · pauses", vi: "Tốc độ · ngắt nghỉ" },
   left: { en: "Left palm", vi: "Lòng bàn tay trái" },
   right: { en: "Right palm", vi: "Lòng bàn tay phải" },
   take: { en: "Take photo", vi: "Chụp ảnh" },
@@ -94,22 +105,26 @@ const L = {
 } satisfies Record<string, Bi>;
 
 const REQUEST: Bi = {
-  en: `Please give me a physiognomy and palm reading from the attached photos and measurements (Markdown, about 600–900 words). Use the sections that apply:
+  en: `Please give me a physiognomy and palm reading from the attached photos, voice measurements and landmark measurements (Markdown, about 600–900 words). Use the sections that apply:
 ### 🧭 Overall impression (Ngũ hành face shape, overall energy)
 ### 🏛 Three courts (Tam đình) and Five Peaks (Ngũ nhạc)
 ### 👁 Five features (Ngũ quan: brows, eyes, nose, mouth, ears)
 ### 🗺 Notable palaces of the face (12 cung: Mệnh/Ấn đường, Quan lộc, Tài bạch, Phu thê, Tử tức, Điền trạch, Tật ách…)
+### 👂 Ears and temples (side profile)
 ### ✋ Hand shape and fingers
 ### 〰 Major palm lines (life, head, heart, fate, sun) and mounts
+### 🎙 Voice (thanh tướng: the Five Tones, whether it comes from the dantian)
 ### 🌱 Strengths to use and how to grow (tướng tùy tâm sinh)
 Only describe what you can actually see; say so when a line or feature isn't clear in the photo.`,
-  vi: `Hãy xem nhân tướng và chỉ tay cho mình từ các ảnh và số đo đính kèm (Markdown, khoảng 600–900 chữ). Dùng những phần phù hợp với ảnh có:
+  vi: `Hãy xem nhân tướng, chỉ tay và thanh tướng cho mình từ các ảnh, số đo giọng nói và số đo điểm mốc đính kèm (Markdown, khoảng 600–900 chữ). Dùng những phần phù hợp với ảnh có:
 ### 🧭 Ấn tượng tổng quan (hình tướng Ngũ hành, khí sắc chung)
 ### 🏛 Tam đình và Ngũ nhạc
 ### 👁 Ngũ quan (mày, mắt, mũi, miệng, tai)
 ### 🗺 Các cung nổi bật trên mặt (12 cung: Mệnh/Ấn đường, Quan lộc, Tài bạch, Phu thê, Tử tức, Điền trạch, Tật ách…)
+### 👂 Tai và thái dương (ảnh nghiêng)
 ### ✋ Hình dáng bàn tay và ngón tay
 ### 〰 Các đường chỉ chính (sinh đạo, trí đạo, tâm đạo, vận mệnh, thái dương) và các gò
+### 🎙 Thanh tướng (Ngũ âm, giọng có phát từ đan điền không)
 ### 🌱 Điểm mạnh nên phát huy và cách tu dưỡng (tướng tùy tâm sinh)
 Chỉ mô tả những gì thật sự nhìn thấy; nói rõ khi một đường chỉ hay đặc điểm không rõ trong ảnh.`,
 };
@@ -142,6 +157,15 @@ async function analyzeSlot(id: SlotId, src: string): Promise<Slot> {
   const { canvas, dataUrl } = await prepare(src);
   const base = { dataUrl, width: canvas.width, height: canvas.height, points: [] as { x: number; y: number }[] };
   try {
+    if (id === "side") {
+      // No measurements from a profile; just check it isn't a front view.
+      const res = (await faceLandmarker()).detect(canvas);
+      if (res.faceLandmarks.length) {
+        const m = measureFace(res.faceLandmarks[0], canvas.width, canvas.height);
+        if (Math.abs(m.yaw) < 0.12) return { ...base, warning: L.sideFrontal };
+      }
+      return base;
+    }
     if (id === "face") {
       const res = (await faceLandmarker()).detect(canvas);
       if (!res.faceLandmarks.length) return { ...base, error: L.noFace };
@@ -285,13 +309,26 @@ function Metrics({ face, hand }: { face?: FaceMetrics; hand?: HandMetrics }) {
   return null;
 }
 
+function VoiceSummary({ m, tone }: { m: VoiceMetrics; tone: keyof typeof TONES }) {
+  const { tr } = useT();
+  return (
+    <dl className="kv small">
+      <dt>{tr(L.tone)}</dt><dd>{tr(TONES[tone].name)} · {tr(TONES[tone].element)}</dd>
+      <dt>F0</dt><dd>{m.pitchHz} Hz · ±{m.pitchVarSt} st</dd>
+      <dt>HNR</dt><dd>{m.hnrDb} dB</dd>
+      <dt>{tr(L.pace)}</dt><dd>{m.syllablesPerSec}/s · {Math.round(m.pauseRatio * 100)}%</dd>
+    </dl>
+  );
+}
+
 interface Props {
   reading?: Reading;
   today: string;
+  gender: "male" | "female" | null;
   contextFor: (scope: ContextScope) => string;
 }
 
-export default function Physiognomy({ reading, today, contextFor }: Props) {
+export default function Physiognomy({ reading, today, gender, contextFor }: Props) {
   const { tr, t, lang } = useT();
   const d = useDraft();
   const session = useGuide("physio");
@@ -333,25 +370,30 @@ export default function Physiognomy({ reading, today, contextFor }: Props) {
   };
 
   const analyze = async () => {
-    const ids = (["face", "left", "right"] as SlotId[]).filter((id) => d.slots[id] && !d.slots[id]!.error);
-    if (!ids.length) return setProblem(L.needPhoto);
+    const ids = (["face", "side", "left", "right"] as SlotId[]).filter((id) => d.slots[id] && !d.slots[id]!.error);
+    if (!ids.length && !d.voice) return setProblem(L.needPhoto);
     if (!d.own) return setProblem(L.needOwn);
     setProblem(null);
     const face = d.slots.face?.face;
     const hands = ids.filter((id) => id !== "face").map((id) => d.slots[id]!.hand!).filter(Boolean);
     const thumbnails = d.saveThumbs ? await Promise.all(ids.map(async (id) => (await prepare(d.slots[id]!.dataUrl, 240, 0.7)).dataUrl)) : undefined;
-    const record: PhysioRecord = { subject: face && hands.length ? "both" : face ? "face" : "hand", face, hands, thumbnails };
-    const labels = ids.map((id, i) => `Photo ${i + 1}: ${id === "face" ? "face (front view)" : `${id} palm`}`);
+    const tone = d.voice ? voiceTone(d.voice, gender).tone : undefined;
+    const parts = [face && "face", ids.includes("side") && "side", hands.length && "hand", d.voice && "voice"].filter(Boolean).join("+");
+    const record: PhysioRecord = { subject: parts, face, hands, side: ids.includes("side"), voice: d.voice, voiceTone: tone, thumbnails };
+    const labels = ids.map((id, i) => `Photo ${i + 1}: ${id === "face" ? "face (front view)" : id === "side" ? "side profile (ears, temples, forehead/nose/chin profile)" : `${id} palm`}`);
     const content = [
       tr(REQUEST),
       "",
+      `Included in this reading (by the person's choice; nothing failed to upload): ${[face && "front face photo", ids.includes("side") && "side-profile photo", hands.length && `${hands.length} palm photo(s)`, d.voice && "voice measurements"].filter(Boolean).join(", ")}. Skip sections for anything not included.`,
       labels.join("; "),
       face ? describeFace(face) : "",
       ...hands.map(describeHand),
+      d.voice ? describeVoice(d.voice, gender) : "",
       scope === "cards" ? (lang === "vi" ? "\nChỉ dựa vào ảnh và số đo; bạn cố ý không biết gì thêm về mình." : "\nUse only the photos and measurements; you intentionally know nothing else about me.") : "",
     ].filter(Boolean).join("\n");
     guide.restart("physio", today, scope, undefined, record);
-    void guide.send("physio", [{ role: "user", content, images: ids.map((id) => toChatImage(d.slots[id]!.dataUrl)) }], { lang, context: contextFor(scope) });
+    const images = ids.map((id) => toChatImage(d.slots[id]!.dataUrl));
+    void guide.send("physio", [{ role: "user", content, ...(images.length ? { images } : {}) }], { lang, context: contextFor(scope) });
     setDraft({ view: "reading", sent: Object.fromEntries(ids.map((id) => [id, d.slots[id]!.dataUrl])) });
   };
 
@@ -377,6 +419,7 @@ export default function Physiognomy({ reading, today, contextFor }: Props) {
             {photos.map((src, i) => <img key={i} src={src} alt="" className="physio-thumb" />)}
             {rec.face && <Metrics face={rec.face} />}
             {rec.hands?.map((h) => <Metrics key={h.side} hand={h} />)}
+            {rec.voice && rec.voiceTone && <VoiceSummary m={rec.voice} tone={rec.voiceTone} />}
           </div>
         </section>
         <section className="card guidance">
@@ -391,23 +434,25 @@ export default function Physiognomy({ reading, today, contextFor }: Props) {
     const slot = d.slots[id];
     return (
       <div className="physio-slot" key={id}>
-        <h4>{id === "face" ? "🙂" : "✋"} {tr(label)}</h4>
+        <h4>{id === "face" ? "🙂" : id === "side" ? "👂" : "✋"} {tr(label)}</h4>
         {working === id ? (
           <div className="physio-empty shimmer">{tr(L.analyzing)}</div>
         ) : slot ? (
           <>
             <Overlay id={id} slot={slot} />
             {slot.error ? <p className="error small">⚠️ {tr(slot.error)}</p> : <Metrics face={slot.face} hand={slot.hand} />}
+            {slot.warning && <p className="hint tiny">⚠️ {tr(slot.warning)}</p>}
             {slot.face && faceQuality(slot.face).map((w, i) => <p key={i} className="hint tiny">⚠️ {tr(w)}</p>)}
           </>
         ) : (
-          <div className="physio-empty">{id === "face" ? "🙂" : "🖐"}</div>
+          <div className="physio-empty">{id === "face" ? "🙂" : id === "side" ? "👂" : "🖐"}</div>
         )}
         <div className="row wrap">
           <button className="ghost" onClick={() => setCamera(id)}>📷 {tr(L.take)}</button>
           <button className="ghost" onClick={() => files.current[id]?.click()}>🖼 {tr(L.upload)}</button>
           {slot && <button className="link danger-link" onClick={() => { const s = { ...draft.slots }; delete s[id]; setDraft({ slots: s }); }}>{tr(L.remove)}</button>}
-          <input ref={(el) => void (files.current[id] = el)} type="file" accept="image/*" capture={id === "face" ? "user" : "environment"} hidden onChange={(e) => onFile(id, e.target.files?.[0])} />
+          {id === "side" && !slot && <p className="tiny muted">{tr(L.sideHint)}</p>}
+          <input ref={(el) => void (files.current[id] = el)} type="file" accept="image/*" capture={id === "face" || id === "side" ? "user" : "environment"} hidden onChange={(e) => onFile(id, e.target.files?.[0])} />
         </div>
       </div>
     );
@@ -420,8 +465,20 @@ export default function Physiognomy({ reading, today, contextFor }: Props) {
         <p className="muted small">{tr(L.intro)}</p>
         <div className="physio-slots">
           {slotCard("face", L.face)}
+          {slotCard("side", L.side)}
           {slotCard("left", L.left)}
           {slotCard("right", L.right)}
+        </div>
+        <div className="physio-voice">
+          <h4>🎙 {tr(L.voice)}</h4>
+          <p className="tiny muted">{tr(L.voiceHint)}</p>
+          <VoiceRecorder onResult={(m) => setDraft({ voice: m })} maxSec={30} minSec={10} />
+          {d.voice && (
+            <div className="row wrap">
+              <VoiceSummary m={d.voice} tone={voiceTone(d.voice, gender).tone} />
+              <button className="link danger-link" onClick={() => setDraft({ voice: undefined })}>{tr(L.remove)}</button>
+            </div>
+          )}
         </div>
 
         <details className="tips">
@@ -455,7 +512,7 @@ export default function Physiognomy({ reading, today, contextFor }: Props) {
       <p className="tiny muted center">{tr(L.disclaimer)}</p>
       {camera && (
         <CameraModal
-          facing={camera === "face" ? "user" : "environment"}
+          facing={camera === "face" || camera === "side" ? "user" : "environment"}
           onClose={() => setCamera(null)}
           onShot={(src) => {
             const id = camera;

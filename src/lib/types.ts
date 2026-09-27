@@ -1,6 +1,7 @@
 import type { Lang } from "./i18n";
 import type { TarotDraw } from "./tarot";
 import type { PhysioRecord } from "./physiognomy";
+import type { VoiceMetrics } from "./voice";
 
 export interface Place {
   lat: number;
@@ -34,6 +35,8 @@ export interface CheckIn {
   focus: string;
   /** Conditions at check-in time, kept so we can learn what actually affects this person. */
   env?: CheckInEnv;
+  /** Optional voice sample measurements (the audio itself is never kept). */
+  voice?: VoiceMetrics;
 }
 
 export interface CheckInEnv {

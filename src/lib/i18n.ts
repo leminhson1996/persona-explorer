@@ -83,6 +83,11 @@ export const UI = {
   onMindHint: bi("A worry, a hope, something that happened…", "Một nỗi lo, một hy vọng, điều vừa xảy ra…"),
   focus: bi("Today I'm working on…", "Hôm nay mình đang làm…"),
   saveCheckin: bi("Save check-in", "Lưu cảm nhận"),
+  voiceCheckinAdd: bi("Add a voice sample (optional)", "Thêm mẫu giọng nói (không bắt buộc)"),
+  voiceCheckin: bi("Voice today", "Giọng nói hôm nay"),
+  syllPerSec: bi("syll/s", "âm tiết/giây"),
+  voiceAsUsual: bi("Your voice sounds like your usual self today.", "Giọng hôm nay giống thường ngày của bạn."),
+  voiceBaselineBuilding: bi("Building your personal baseline: {n} more voice check-in(s) to compare against.", "Đang tạo mức chuẩn giọng của riêng bạn: cần thêm {n} lần ghi để so sánh."),
   checkinSaved: bi("Check-in saved", "Đã lưu cảm nhận"),
 
   // Dashboard

@@ -543,8 +543,9 @@ button:disabled { opacity: 0.5; cursor: default; }
 
 /* ---------- Physiognomy ---------- */
 .k-physio { color: var(--accent); }
-.physio-slots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 12px 0; }
-@media (max-width: 860px) { .physio-slots { grid-template-columns: 1fr; } }
+.physio-slots { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin: 12px 0; }
+@media (max-width: 1000px) { .physio-slots { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .physio-slots { grid-template-columns: 1fr; } }
 .physio-slot { display: grid; gap: 8px; align-content: start; padding: 12px; border-radius: 14px; background: var(--field); border: 1px solid var(--field-border); }
 .physio-slot h4 { margin: 0; }
 .physio-empty { display: grid; place-items: center; aspect-ratio: 3 / 4; border-radius: 10px; border: 1.5px dashed var(--field-border); font-size: 3rem; opacity: 0.6; }
@@ -558,3 +559,17 @@ button:disabled { opacity: 0.5; cursor: default; }
 .modal-body { width: min(720px, 100%); display: grid; gap: 12px; }
 .modal video { width: 100%; max-height: 70vh; border-radius: 12px; background: #000; object-fit: contain; }
 .modal video.mirror { transform: scaleX(-1); }
+
+/* Voice */
+.voice-rec { display: grid; gap: 8px; }
+.passage { margin: 0; padding: 10px 12px; border-left: 3px solid var(--accent); background: var(--field); border-radius: 0 10px 10px 0; font-style: italic; line-height: 1.6; }
+.voice-rec.compact .passage { font-size: 0.82rem; }
+.rec-live { display: flex; align-items: center; gap: 10px; }
+.rec-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--bad); animation: pulse 1s ease-in-out infinite; }
+.rec-time { font-variant-numeric: tabular-nums; font-size: 0.85rem; }
+.rec-meter { flex: 1; height: 6px; background: var(--field); border-radius: 999px; overflow: hidden; }
+.rec-meter span { display: block; height: 100%; background: var(--good); transition: width 0.08s linear; }
+.voice-result { margin-top: 6px; padding: 8px 10px; border-radius: 10px; background: var(--field); }
+.physio-voice { padding: 12px; border-radius: 14px; background: var(--field); border: 1px solid var(--field-border); margin-bottom: 12px; display: grid; gap: 6px; }
+.physio-voice h4 { margin: 0; }
+.physio-voice .passage { background: var(--card); }

@@ -2,14 +2,17 @@ import { useEffect, useState } from "react";
 import { FEELINGS, MOODS, useT } from "../lib/i18n";
 import { uid } from "../lib/storage";
 import type { CheckIn } from "../lib/types";
+import { baseline, compareToBaseline, type VoiceMetrics } from "../lib/voice";
+import VoiceRecorder from "./VoiceRecorder";
 
 interface Props {
   existing?: CheckIn;
   today: string;
   onSave: (c: CheckIn) => void;
+  history: CheckIn[]; // earlier check-ins, for the voice baseline
 }
 
-export default function CheckInCard({ existing, today, onSave }: Props) {
+export default function CheckInCard({ existing, today, onSave, history }: Props) {
   const { t, tr } = useT();
   const [mood, setMood] = useState(existing?.mood ?? 3);
   const [energy, setEnergy] = useState(existing?.energy ?? 5);
@@ -17,6 +20,11 @@ export default function CheckInCard({ existing, today, onSave }: Props) {
   const [note, setNote] = useState(existing?.note ?? "");
   const [focus, setFocus] = useState(existing?.focus ?? "");
   const [flash, setFlash] = useState(false);
+  const [voice, setVoice] = useState<VoiceMetrics | undefined>(existing?.voice);
+  const [showVoice, setShowVoice] = useState(!!existing?.voice);
+  const base = baseline(history.filter((c) => c.date !== today && c.voice).map((c) => c.voice!));
+  const deltas = voice && base ? compareToBaseline(voice, base) : [];
+  const voiceDays = history.filter((c) => c.date !== today && c.voice).length;
 
   useEffect(() => {
     if (!flash) return;
@@ -32,6 +40,7 @@ export default function CheckInCard({ existing, today, onSave }: Props) {
       date: today,
       createdAt: existing?.createdAt ?? new Date().toISOString(),
       mood, energy, feelings, note: note.trim(), focus: focus.trim(),
+      ...(voice ? { voice } : {}),
     });
     setFlash(true);
   };
@@ -77,6 +86,31 @@ export default function CheckInCard({ existing, today, onSave }: Props) {
       <div className="field">
         <label htmlFor="note">{t("onMind")}</label>
         <textarea id="note" rows={3} placeholder={t("onMindHint")} value={note} onChange={(e) => setNote(e.target.value)} />
+      </div>
+
+      <div className="field">
+        {!showVoice ? (
+          <button type="button" className="link" onClick={() => setShowVoice(true)}>🎙 {t("voiceCheckinAdd")}</button>
+        ) : (
+          <>
+            <label>🎙 {t("voiceCheckin")}</label>
+            <VoiceRecorder onResult={setVoice} maxSec={25} minSec={8} compact />
+            {voice && (
+              <div className="voice-result small">
+                <span>{voice.pitchHz} Hz · {voice.syllablesPerSec} {t("syllPerSec")} · HNR {voice.hnrDb} dB</span>
+                {base ? (
+                  deltas.length ? (
+                    <ul className="advice">{deltas.map((d) => <li key={d.key}><strong>{tr(d.label)}:</strong> {tr(d.text)}</li>)}</ul>
+                  ) : (
+                    <p className="muted">{t("voiceAsUsual")}</p>
+                  )
+                ) : (
+                  <p className="muted tiny">{t("voiceBaselineBuilding").replace("{n}", String(Math.max(0, 3 - voiceDays)))}</p>
+                )}
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       <div className="actions">

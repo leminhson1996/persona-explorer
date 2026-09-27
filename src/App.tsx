@@ -5,6 +5,7 @@ import { buildSnapshot } from "./lib/snapshot";
 import type { CheckIn, CheckInEnv, CosmosData, DiaryEntry, EnvDaily, EnvNow, Meditation, Profile, Reading, ReadingKind } from "./lib/types";
 import { sunTimes } from "./lib/astro";
 import { moonIlluminationOn } from "./lib/insights";
+import { genderOf } from "./lib/bazi";
 import { guide, useStreamingKinds } from "./lib/guideStore";
 import { meditation, useMeditationRunning } from "./lib/meditationStore";
 import ProfileForm from "./components/ProfileForm";
@@ -265,6 +266,7 @@ export default function App() {
                         existing={todayCheckin}
                         today={today}
                         onSave={(c) => saveCheckins([...checkins.filter((x) => x.id !== c.id), { ...c, env: envForCheckin() }])}
+                        history={checkins}
                       />
                       <button className="card diary-link" onClick={() => setTab("journal")}>
                         <span>{UI.writeDiary[lang]}</span>
@@ -344,6 +346,7 @@ export default function App() {
                 <Physiognomy
                   reading={physioReading}
                   today={today}
+                  gender={genderOf(profile)}
                   // "profile" here means the profile plus birth charts, so the reading can relate face and fate.
                   contextFor={(scope) =>
                     scope === "profile"

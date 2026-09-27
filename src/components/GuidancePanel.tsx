@@ -150,11 +150,11 @@ export default function GuidancePanel({ kind = "daily", diary, meditations, prof
       return;
     }
     if (kind === "dharma") {
-      send([{ role: "user", content: `${DHARMA_REQUEST[lang]}\n\nMy check-in today:\n${describeCheckin(checkin)}` }], "full");
+      send([{ role: "user", content: `${DHARMA_REQUEST[lang]}\n\nMy check-in today:\n${describeCheckin(checkin, allCheckins)}` }], "full");
       return;
     }
     const ask = lang === "vi" ? "Hãy cho mình lời luận giải hôm nay." : "Please give me today's reading.";
-    send([{ role: "user", content: `${ask}\n\nMy check-in today:\n${describeCheckin(checkin)}` }], "full");
+    send([{ role: "user", content: `${ask}\n\nMy check-in today:\n${describeCheckin(checkin, allCheckins)}` }], "full");
   };
 
   return (
