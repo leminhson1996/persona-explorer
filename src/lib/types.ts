@@ -104,7 +104,7 @@ export interface ChatMsg {
   content: string;
 }
 
-export type ReadingKind = "daily" | "chart" | "dharma" | "tarot";
+export type ReadingKind = "daily" | "chart" | "dharma" | "tarot" | "progress";
 /** What a reading was allowed to see: everything, the profile only, or just the birth data. */
 export type ContextScope = "full" | "profile" | "birth" | "cards";
 

@@ -23,6 +23,13 @@ Claude weaves all of it into a daily reading, can give a deep reading of your T�
 
 Tử Vi and Bát Tự need your birth time; gender sets the direction of đại hạn / đại vận. Births from 23:00 count as the next day (giờ Tý).
 
+## Growth overview
+
+**Progress (Tổng hợp)** brings everything in `my_data/` together for 7 days, 30 days, 90 days or 1 year:
+- Stat tiles with the change against the previous period: check-in days, streak, average energy and mood, meditation minutes, diary entries and words, readings.
+- Energy and mood trends (daily points plus a 7-day average), weekly meditation minutes, a practice calendar, your most-named feelings, readings by type and recurring tarot cards.
+- A Claude growth review with concrete next steps, saved to the Library.
+
 ## Readings library
 
 Every reading and follow-up chat (daily, Tử Vi & Bát Tự, Buddhist path) is saved automatically. Open **Library (Thư viện)** to read them again. You can filter by category, search (accents optional), copy, download as Markdown, delete, or jump back with **Continue this chat**.

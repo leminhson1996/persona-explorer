@@ -25,6 +25,7 @@ export const UI = {
   tabDharma: bi("Buddhist path", "Phật pháp"),
   tabLibrary: bi("Library", "Thư viện"),
   tabTarot: bi("Tarot", "Tarot"),
+  tabProgress: bi("Progress", "Tổng hợp"),
 
   // Profile
   profileTitle: bi("Your profile", "Hồ sơ của bạn"),

@@ -92,7 +92,7 @@ export function buildContextFor(ctx: ContextScope, x: ContextSources): string {
 }
 
 interface Props {
-  kind?: Exclude<ReadingKind, "tarot">;
+  kind?: Exclude<ReadingKind, "tarot" | "progress">;
   diary: DiaryEntry[];
   meditations: Meditation[];
   profile: Profile;

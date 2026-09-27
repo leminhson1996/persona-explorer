@@ -13,6 +13,7 @@ import Dashboard from "./components/Dashboard";
 import CosmosCard from "./components/CosmosCard";
 import GuidancePanel, { buildContextFor } from "./components/GuidancePanel";
 import Tarot from "./components/Tarot";
+import Progress from "./components/Progress";
 import { describeProfile } from "./lib/snapshot";
 import Journal from "./components/Journal";
 import Charts from "./components/Charts";
@@ -20,11 +21,11 @@ import Dharma from "./components/Dharma";
 import Library from "./components/Library";
 import Starfield from "./components/Starfield";
 
-type Tab = "today" | "charts" | "dharma" | "tarot" | "library" | "journal" | "profile";
+type Tab = "today" | "charts" | "dharma" | "tarot" | "progress" | "library" | "journal" | "profile";
 
-const KIND_TAB: Record<ReadingKind, Tab> = { daily: "today", chart: "charts", dharma: "dharma", tarot: "tarot" };
+const KIND_TAB: Record<ReadingKind, Tab> = { daily: "today", chart: "charts", dharma: "dharma", tarot: "tarot", progress: "progress" };
 
-const TAB_LABEL = { today: "tabToday", charts: "tabCharts", dharma: "tabDharma", tarot: "tabTarot", library: "tabLibrary", journal: "tabJournal", profile: "tabProfile" } as const;
+const TAB_LABEL = { today: "tabToday", charts: "tabCharts", dharma: "tabDharma", tarot: "tabTarot", progress: "tabProgress", library: "tabLibrary", journal: "tabJournal", profile: "tabProfile" } as const;
 
 const initialLang = (): Lang => store.loadLang() ?? (navigator.language.startsWith("vi") ? "vi" : "en");
 
@@ -243,7 +244,7 @@ export default function App() {
         ) : (
           <>
             <nav className="tabs">
-              {(["today", "charts", "dharma", "tarot", "library", "journal", "profile"] as const).map((t) => (
+              {(["today", "charts", "dharma", "tarot", "progress", "library", "journal", "profile"] as const).map((t) => (
                 <button key={t} className={tab === t ? "on" : ""} onClick={() => setTab(t)}>
                   {UI[TAB_LABEL[t]][lang]}
                   {streamingTabs.includes(t) && <span className="live-dot" aria-label={UI.libWriting[lang]} />}
@@ -336,6 +337,9 @@ export default function App() {
                       : buildContextFor(scope, { diary, meditations, profile, snapshot, cosmos, env, allCheckins: checkins, checkin: todayCheckin, recent, today })
                   }
                 />
+              )}
+              {tab === "progress" && (
+                <Progress profile={profile} checkins={checkins} diary={diary} meditations={meditations} readings={readings} today={today} />
               )}
               {tab === "library" && (
                 <Library
