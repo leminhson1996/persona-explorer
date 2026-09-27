@@ -1,4 +1,5 @@
 import type { Lang } from "./i18n";
+import type { TarotDraw } from "./tarot";
 
 export interface Place {
   lat: number;
@@ -103,14 +104,18 @@ export interface ChatMsg {
   content: string;
 }
 
-export type ReadingKind = "daily" | "chart" | "dharma";
+export type ReadingKind = "daily" | "chart" | "dharma" | "tarot";
+/** What a reading was allowed to see: everything, the profile only, or just the birth data. */
+export type ContextScope = "full" | "profile" | "birth" | "cards";
 
 export interface Reading {
   id: string;
   date: string;
   createdAt: string;
   kind?: ReadingKind; // missing = daily
-  status?: "streaming" | "done" | "interrupted"; // "streaming" left over after a reload means it was cut off
+  status?: "streaming" | "done" | "interrupted";
+  scope?: ContextScope; // missing = full
+  tarot?: TarotDraw; // the question and cards, for tarot readings // "streaming" left over after a reload means it was cut off
   /** Full API conversation; messages[0] is the auto-generated request and isn't shown. */
   messages: ChatMsg[];
 }

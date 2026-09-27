@@ -2,7 +2,8 @@
 // so switching tabs never interrupts a reading. Progress is saved while it streams.
 import { useSyncExternalStore } from "react";
 import { uid } from "./storage";
-import type { ChatMsg, Reading, ReadingKind } from "./types";
+import type { ChatMsg, ContextScope, Reading, ReadingKind } from "./types";
+import type { TarotDraw } from "./tarot";
 
 export interface Session {
   kind: ReadingKind;
@@ -14,6 +15,8 @@ export interface Session {
   pending: string | null; // text streaming right now, null when idle
   error: string | null;
   retry: string | null; // a follow-up that got no answer, to put back in the input box
+  contextScope: ContextScope; // fixed for the whole conversation, so follow-ups see the same context
+  tarot?: TarotDraw;
 }
 
 type State = Partial<Record<ReadingKind, Session>>;
@@ -31,7 +34,7 @@ function update(kind: ReadingKind, patch: Partial<Session>) {
 }
 
 function persist(s: Session, messages: ChatMsg[], status: Reading["status"]) {
-  saver({ id: s.readingId, date: s.date, createdAt: s.createdAt, kind: s.kind, messages, status });
+  saver({ id: s.readingId, date: s.date, createdAt: s.createdAt, kind: s.kind, messages, status, ...(s.contextScope !== "full" ? { scope: s.contextScope } : {}), ...(s.tarot ? { tarot: s.tarot } : {}) });
 }
 
 export const guide = {
@@ -60,16 +63,18 @@ export const guide = {
         pending: null,
         error: null,
         retry: null,
+        contextScope: saved?.scope ?? "full",
+        tarot: saved?.tarot,
       },
     };
     listeners.forEach((l) => l());
   },
 
   /** Start a brand-new conversation (e.g. "Read again"). */
-  restart(kind: ReadingKind, date: string) {
+  restart(kind: ReadingKind, date: string, scope: ContextScope = "full", tarot?: TarotDraw) {
     const s = state[kind];
     if (!s || s.pending !== null) return;
-    update(kind, { readingId: uid(), createdAt: new Date().toISOString(), date, messages: [], error: null });
+    update(kind, { readingId: uid(), createdAt: new Date().toISOString(), date, messages: [], error: null, contextScope: scope, tarot });
   },
 
   clearRetry(kind: ReadingKind) {

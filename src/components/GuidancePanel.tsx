@@ -1,12 +1,12 @@
-import { useEffect, useRef, useState } from "react";
-import ReactMarkdown from "react-markdown";
+import { useEffect, useState } from "react";
 import { useT } from "../lib/i18n";
-import { describeCheckin, describeCosmos, describeDiary, describeProfile, describeRecent, describeSnapshot, type Snapshot } from "../lib/snapshot";
+import { describeCheckin, describeCosmos, describeDiary, describeNatalCharts, describeProfile, describeRecent, describeSnapshot, type Snapshot } from "../lib/snapshot";
 import { guide, useGuide } from "../lib/guideStore";
+import ChatThread from "./ChatThread";
 import { describeDharma } from "../lib/dharma";
 import { describeEnvironment } from "../lib/environment";
 import { describeInsights } from "../lib/insights";
-import type { ChatMsg, CheckIn, CosmosData, DiaryEntry, EnvNow, Meditation, Profile, Reading, ReadingKind } from "../lib/types";
+import type { ChatMsg, CheckIn, ContextScope, CosmosData, DiaryEntry, EnvNow, Meditation, Profile, Reading, ReadingKind } from "../lib/types";
 
 const CHART_REQUEST = {
   en: `Please give me a deep reading of my Tử Vi and Bát Tự charts together (about 700–900 words, Markdown), with these sections:
@@ -42,14 +42,57 @@ const DHARMA_REQUEST = {
 ### 🙏 Một lời nhắc mang theo`,
 };
 
+/** Added to the chart request when the reading must ignore the person's current life. */
+const SCOPE_NOTE: Record<"profile" | "birth", { en: string; vi: string }> = {
+  profile: {
+    en: "\n\nUse ONLY my profile and my birth charts. You have no check-ins, diary or daily data on purpose; don't guess how I feel or what happened recently.",
+    vi: "\n\nChỉ dựa vào Hồ sơ và lá số của mình. Bạn cố ý không có check-in, nhật ký hay dữ liệu hằng ngày; đừng phỏng đoán cảm xúc hay chuyện gần đây của mình.",
+  },
+  birth: {
+    en: "\n\nRead purely from my birth data and charts. You intentionally know nothing about my current work, goals or life; don't assume any. Describe the chart's own potentials.",
+    vi: "\n\nLuận giải thuần túy từ ngày giờ sinh và lá số. Bạn cố ý không biết gì về công việc, mục tiêu hay cuộc sống hiện tại của mình; đừng giả định. Hãy mô tả tiềm năng vốn có của lá số.",
+  },
+};
+
+export const SCOPES: ("full" | "profile" | "birth")[] = ["full", "profile", "birth"];
+export const SCOPE_LABEL = { full: "scopeFull", profile: "scopeProfile", birth: "scopeBirth", cards: "scopeCards" } as const;
+const SCOPE_HINT = { full: "scopeFullHint", profile: "scopeProfileHint", birth: "scopeBirthHint" } as const;
+const SCOPE_KEY = "ue.chartScope";
+
 const LABELS = {
   daily: { title: "guidanceTitle", intro: "guidanceIntro", button: "receive" },
   chart: { title: "chartReadingTitle", intro: "chartReadingIntro", button: "receiveChart" },
   dharma: { title: "dharmaReadingTitle", intro: "dharmaReadingIntro", button: "receiveDharma" },
 } as const;
 
+export interface ContextSources {
+  diary: DiaryEntry[];
+  meditations: Meditation[];
+  profile: Profile;
+  snapshot: Snapshot;
+  cosmos: CosmosData | null | undefined;
+  env: EnvNow | null | undefined;
+  allCheckins: CheckIn[];
+  checkin?: CheckIn;
+  recent: CheckIn[];
+  today: string;
+}
+
+/** Everything Claude may see, trimmed to the chosen scope. */
+export function buildContextFor(ctx: ContextScope, x: ContextSources): string {
+  if (ctx === "cards") return "(They chose to share only their question and the cards; nothing else is known about them on purpose.)";
+  if (ctx === "profile") return [describeProfile(x.profile), describeNatalCharts(x.snapshot)].join("\n\n");
+  if (ctx === "birth") return [describeProfile(x.profile, { birthOnly: true }), describeNatalCharts(x.snapshot)].join("\n\n");
+  return [
+    describeProfile(x.profile), describeSnapshot(x.snapshot),
+    describeEnvironment(x.env ?? null, x.snapshot.nature.place.label ?? "their location"),
+    describeCosmos(x.cosmos ?? null), describeInsights(x.allCheckins), describeRecent(x.recent),
+    describeDiary(x.diary, x.today), describeDharma(x.snapshot.now, x.checkin, x.meditations),
+  ].filter(Boolean).join("\n\n");
+}
+
 interface Props {
-  kind?: ReadingKind;
+  kind?: Exclude<ReadingKind, "tarot">;
   diary: DiaryEntry[];
   meditations: Meditation[];
   profile: Profile;
@@ -66,9 +109,24 @@ interface Props {
 export default function GuidancePanel({ kind = "daily", diary, meditations, profile, snapshot, cosmos, env, allCheckins, checkin, recent, reading, today }: Props) {
   const { t, lang } = useT();
   const session = useGuide(kind);
-  const [input, setInput] = useState("");
-  const endRef = useRef<HTMLDivElement>(null);
   const scope = kind === "chart" ? "chart" : today;
+  // Which data a new chart reading may use (a per-browser preference).
+  const [chartScope, setChartScope] = useState<"full" | "profile" | "birth">(() => {
+    try {
+      const v = localStorage.getItem(SCOPE_KEY);
+      return v === "profile" || v === "birth" ? v : "full";
+    } catch {
+      return "full";
+    }
+  });
+  const chooseScope = (v: "full" | "profile" | "birth") => {
+    setChartScope(v);
+    try {
+      localStorage.setItem(SCOPE_KEY, v);
+    } catch {
+      /* ignore */
+    }
+  };
 
   // Attach to (or create) this kind's conversation. It lives outside the component, so it
   // survives tab switches; a new day starts a new daily/dharma conversation.
@@ -76,53 +134,28 @@ export default function GuidancePanel({ kind = "daily", diary, meditations, prof
     guide.ensure(kind, scope, today, reading);
   }, [kind, scope, today, reading]);
 
-  // A follow-up that got no answer goes back into the input box.
-  useEffect(() => {
-    if (session?.retry) {
-      setInput(session.retry);
-      guide.clearRetry(kind);
-    }
-  }, [session?.retry, kind]);
-
-  const pending = session?.pending ?? null;
-  useEffect(() => {
-    if (pending !== null) endRef.current?.scrollIntoView({ block: "nearest" });
-  }, [pending]);
-
   const messages = session?.messages ?? [];
-  const busy = pending !== null;
-  const interrupted = !busy && reading && session?.readingId === reading.id && (reading.status === "streaming" || reading.status === "interrupted");
+  const busy = (session?.pending ?? null) !== null;
 
-  const buildContext = () =>
-    [describeProfile(profile), describeSnapshot(snapshot), describeEnvironment(env ?? null, snapshot.nature.place.label ?? "their location"), describeCosmos(cosmos ?? null), describeInsights(allCheckins), describeRecent(recent), describeDiary(diary, today), describeDharma(snapshot.now, checkin, meditations)]
-      .filter(Boolean)
-      .join("\n\n");
+  const buildContext = (ctx: ContextScope) =>
+    buildContextFor(ctx, { diary, meditations, profile, snapshot, cosmos, env, allCheckins, checkin, recent, today });
 
-  const send = (history: ChatMsg[]) => void guide.send(kind, history, { lang, context: buildContext() });
+  const send = (history: ChatMsg[], ctx: ContextScope) => void guide.send(kind, history, { lang, context: buildContext(ctx) });
 
   const requestReading = () => {
-    guide.restart(kind, today);
+    const ctx = kind === "chart" ? chartScope : "full";
+    guide.restart(kind, today, ctx);
     if (kind === "chart") {
-      send([{ role: "user", content: CHART_REQUEST[lang] }]);
+      send([{ role: "user", content: CHART_REQUEST[lang] + (ctx === "profile" || ctx === "birth" ? SCOPE_NOTE[ctx][lang] : "") }], ctx);
       return;
     }
     if (kind === "dharma") {
-      send([{ role: "user", content: `${DHARMA_REQUEST[lang]}\n\nMy check-in today:\n${describeCheckin(checkin)}` }]);
+      send([{ role: "user", content: `${DHARMA_REQUEST[lang]}\n\nMy check-in today:\n${describeCheckin(checkin)}` }], "full");
       return;
     }
     const ask = lang === "vi" ? "Hãy cho mình lời luận giải hôm nay." : "Please give me today's reading.";
-    send([{ role: "user", content: `${ask}\n\nMy check-in today:\n${describeCheckin(checkin)}` }]);
+    send([{ role: "user", content: `${ask}\n\nMy check-in today:\n${describeCheckin(checkin)}` }], "full");
   };
-
-  const followUp = (e: React.FormEvent) => {
-    e.preventDefault();
-    const q = input.trim();
-    if (!q || busy) return;
-    setInput("");
-    send([...messages, { role: "user", content: q }]);
-  };
-
-  const visible = messages.slice(1);
 
   return (
     <section className="card guidance">
@@ -138,31 +171,27 @@ export default function GuidancePanel({ kind = "daily", diary, meditations, prof
         )}
       </div>
       {kind !== "chart" && !checkin && !messages.length && <p className="hint">💡 {t("checkinFirst")}</p>}
-
-      <div className="thread">
-        {visible.map((m, i) =>
-          m.role === "assistant" ? (
-            <article key={i} className="msg guide"><ReactMarkdown>{m.content}</ReactMarkdown></article>
-          ) : (
-            <p key={i} className="msg me"><span className="who">{t("you")}</span>{m.content}</p>
-          ),
-        )}
-        {busy && (
-          <article className="msg guide">
-            {pending ? <ReactMarkdown>{pending}</ReactMarkdown> : <p className="shimmer">{t("thinking")}</p>}
-          </article>
-        )}
-        {interrupted && <p className="hint">⚠️ {t("interruptedNote")}</p>}
-        {session?.error && <p className="error">⚠️ {t("errorPrefix")}: {session.error}</p>}
-        <div ref={endRef} />
-      </div>
-
-      {messages.length > 0 && (
-        <form className="ask" onSubmit={followUp}>
-          <input value={input} onChange={(e) => setInput(e.target.value)} placeholder={t("askFollowUp")} disabled={busy} />
-          <button className="primary" disabled={busy || !input.trim()}>{t("send")}</button>
-        </form>
+      {kind === "chart" && (
+        <div className="scope-picker">
+          <p className="small"><strong>{t("scopeTitle")}</strong></p>
+          <div className="chips" role="radiogroup" aria-label={t("scopeTitle")}>
+            {SCOPES.map((v) => (
+              <button key={v} role="radio" aria-checked={chartScope === v} className={`chip ${chartScope === v ? "on" : ""}`} disabled={busy} onClick={() => chooseScope(v)}>
+                {t(SCOPE_LABEL[v])}
+              </button>
+            ))}
+          </div>
+          <p className="tiny muted">{t(SCOPE_HINT[chartScope])}</p>
+          {messages.length > 0 && session && session.contextScope !== chartScope && (
+            <p className="tiny hint">↻ {t("scopeApplyNext")}</p>
+          )}
+          {messages.length > 0 && session && (
+            <p className="tiny muted">{t("scopeThisChat")}: <strong>{t(SCOPE_LABEL[session.contextScope])}</strong></p>
+          )}
+        </div>
       )}
+
+      <ChatThread kind={kind} reading={reading} contextFor={buildContext} />
     </section>
   );
 }

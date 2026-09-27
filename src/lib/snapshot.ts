@@ -185,12 +185,16 @@ export function describeCosmos(c: CosmosData | null): string {
   return out.length > 1 ? out.join("\n") : "";
 }
 
-export function describeProfile(p: Profile): string {
-  return [
+export function describeProfile(p: Profile, opts: { birthOnly?: boolean } = {}): string {
+  const birth = [
     "## About them",
     `- Name: ${p.name || "(not given)"}`,
     `- Born: ${p.birthDate}${p.birthTime ? ` at ${p.birthTime}` : ""} (UTC${p.birthUtcOffset >= 0 ? "+" : ""}${p.birthUtcOffset})${p.birthPlace?.label ? ` in ${p.birthPlace.label}` : ""}`,
     p.gender ? `- Gender: ${p.gender}` : "",
+  ];
+  if (opts.birthOnly) return birth.filter(Boolean).join("\n");
+  return [
+    ...birth,
     `- What they're doing in life: ${p.occupation || "(not given)"}`,
     `- What they want to grow toward: ${p.goals || "(not given)"}`,
     `- What feels hard or stuck: ${p.challenges || "(not given)"}`,
@@ -221,7 +225,7 @@ export function describeRecent(checkins: CheckIn[]): string {
   ].join("\n");
 }
 
-function describeBazi(s: Snapshot): string {
+export function describeBazi(s: Snapshot): string {
   const b = s.bazi;
   if (!b) return "### Bát Tự (Four Pillars)\n- Not available: birth time unknown.";
   const p = b.pillars;
@@ -241,7 +245,7 @@ function describeBazi(s: Snapshot): string {
   ].filter(Boolean).join("\n");
 }
 
-function describeTuVi(s: Snapshot): string {
+export function describeTuVi(s: Snapshot): string {
   const t = s.tuvi;
   if (!t) return "### Tử Vi Đẩu Số\n- Not available: birth time unknown.";
   const palace = (chi: number) => t.palaces[chi];
@@ -271,4 +275,25 @@ export function describeDiary(entries: DiaryEntry[], today: string): string {
   if (earlier.length) out.push("Recent days:", ...earlier.map((e) => `- ${e.date}: ${e.text.slice(0, 400)}${e.text.length > 400 ? "…" : ""}`));
   if (todays.length) out.push("Today:", ...todays.map((e) => e.text.slice(0, 2500)));
   return out.join("\n");
+}
+
+/** Birth-chart-only context: nothing about today, check-ins or the diary. */
+export function describeNatalCharts(s: Snapshot): string {
+  const e = s.eastern;
+  return [
+    "## Their birth charts",
+    "### Western natal signature",
+    `- Sun in ${sn(s.natal.sun.sign)} ${deg(s.natal.sun.deg)}; Moon in ${sn(s.natal.moon.sign)}${s.natal.moonCertain ? "" : " (uncertain)"}; ${s.natal.asc !== null ? `Rising in ${sn(astro.signIndex(s.natal.asc))}` : "Rising unknown"}`,
+    `- Mercury in ${sn(s.natal.mercury.sign)}, Venus in ${sn(s.natal.venus.sign)}, Mars in ${sn(s.natal.mars.sign)}`,
+    "### Numerology (birth)",
+    numLine("Life Path", s.numbers.lifePath),
+    numLine("Expression (from name)", s.numbers.expression),
+    numLine("Birthday", s.numbers.birthday),
+    "### Vietnamese birth year",
+    `- ${e.birthYear.name} (${e.birthYear.animal.en}), bản mệnh ${e.birthYear.napAm} (${e.birthYear.napAmElement})`,
+    "",
+    describeBazi(s),
+    "",
+    describeTuVi(s),
+  ].filter((l) => l !== "").join("\n");
 }

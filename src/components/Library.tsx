@@ -3,11 +3,14 @@ import ReactMarkdown from "react-markdown";
 import { fmt, useT, type Bi } from "../lib/i18n";
 import { useSessions, type Session } from "../lib/guideStore";
 import type { Reading, ReadingKind } from "../lib/types";
+import { spreadById } from "../lib/tarot";
+import { CardFace } from "./Tarot";
 
 export const KIND_META: Record<ReadingKind, { icon: string; label: Bi; cls: string }> = {
   daily: { icon: "✦", label: { en: "Daily guidance", vi: "Hằng ngày" }, cls: "k-daily" },
   chart: { icon: "☯", label: { en: "Tử Vi & Bát Tự", vi: "Tử Vi & Bát Tự" }, cls: "k-chart" },
   dharma: { icon: "☸", label: { en: "Buddhist path", vi: "Phật pháp" }, cls: "k-dharma" },
+  tarot: { icon: "🃏", label: { en: "Tarot", vi: "Tarot" }, cls: "k-tarot" },
 };
 
 const kindOf = (r: Reading): ReadingKind => r.kind ?? "daily";
@@ -58,7 +61,7 @@ export default function Library({ readings: savedReadings, onDelete, onContinue 
 
   const sorted = useMemo(() => [...readings].sort((a, b) => b.createdAt.localeCompare(a.createdAt)), [readings]);
   const counts = useMemo(() => {
-    const c: Record<ReadingKind | "all", number> = { all: readings.length, daily: 0, chart: 0, dharma: 0 };
+    const c: Record<ReadingKind | "all", number> = { all: readings.length, daily: 0, chart: 0, dharma: 0, tarot: 0 };
     readings.forEach((r) => c[kindOf(r)]++);
     return c;
   }, [readings]);
@@ -83,6 +86,8 @@ export default function Library({ readings: savedReadings, onDelete, onContinue 
     new Date(r.createdAt).toLocaleString(locale, { weekday: "long", day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
   const isLive = (r: Reading) => streaming.includes(kindOf(r)) && currentIds[kindOf(r)] === r.id;
 
+  const scopeBadge = (r: Reading) =>
+    r.scope && r.scope !== "full" ? <span className="badge scope">{t(r.scope === "profile" ? "scopeProfile" : r.scope === "cards" ? "scopeCards" : "scopeBirth")}</span> : null;
   const statusBadge = (r: Reading) =>
     isLive(r) ? <span className="badge live">● {t("libWriting")}</span>
       : r.status === "streaming" || r.status === "interrupted" ? <span className="badge warn">{t("libInterrupted")}</span>
@@ -113,7 +118,7 @@ export default function Library({ readings: savedReadings, onDelete, onContinue 
         <h2>📚 {t("libTitle")}</h2>
         <input className="lib-search" type="search" placeholder={t("libSearch")} value={query} onChange={(e) => setQuery(e.target.value)} />
         <div className="chips lib-filters" role="tablist">
-          {(["all", "daily", "chart", "dharma"] as const).map((k) => (
+          {(["all", "daily", "chart", "dharma", "tarot"] as const).map((k) => (
             <button key={k} role="tab" aria-selected={filter === k} className={`chip ${filter === k ? "on" : ""}`} onClick={() => setFilter(k)}>
               {k === "all" ? t("libAll") : `${KIND_META[k].icon} ${tr(KIND_META[k].label)}`} <span className="count">{counts[k]}</span>
             </button>
@@ -137,9 +142,11 @@ export default function Library({ readings: savedReadings, onDelete, onContinue 
                           <span className={`kind-tag ${KIND_META[k].cls}`}>{KIND_META[k].icon} {tr(KIND_META[k].label)}</span>
                           <span className="tiny muted">{new Date(r.createdAt).toLocaleDateString(locale, { day: "numeric", month: "short" })}</span>
                         </div>
+                        {r.tarot?.question && <p className="small"><strong>❓ {r.tarot.question}</strong></p>}
                         <p className="small">{snippet(r) || "…"}</p>
                         <div className="lib-item-foot tiny muted">
                           {fu.length > 0 && <span>💬 {fmt(t("libFollowUps"), { n: fu.length })}</span>}
+                          {scopeBadge(r)}
                           {statusBadge(r)}
                         </div>
                       </button>
@@ -163,6 +170,7 @@ export default function Library({ readings: savedReadings, onDelete, onContinue 
                 <span className={`kind-tag ${KIND_META[kindOf(selected)].cls}`}>
                   {KIND_META[kindOf(selected)].icon} {tr(KIND_META[kindOf(selected)].label)}
                 </span>
+                {scopeBadge(selected)}
                 {statusBadge(selected)}
                 <p className="small muted">{when(selected)}</p>
               </div>
@@ -185,6 +193,17 @@ export default function Library({ readings: savedReadings, onDelete, onContinue 
                 </button>
               </div>
             </div>
+            {selected.tarot && (
+              <div className="lib-tarot">
+                {selected.tarot.question && <p><strong>❓ {selected.tarot.question}</strong></p>}
+                <p className="tiny muted">{tr(spreadById(selected.tarot.spread).name)}</p>
+                <div className="lib-cards">
+                  {selected.tarot.cards.map((c, i) => (
+                    <CardFace key={i} c={c} size="sm" label={`${i + 1}. ${tr(spreadById(selected.tarot!.spread).positions[i])}`} />
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="thread">
               {selected.messages.slice(1).map((m, i) =>
                 m.role === "assistant" ? (

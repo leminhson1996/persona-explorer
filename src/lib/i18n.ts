@@ -24,6 +24,7 @@ export const UI = {
   tabCharts: bi("Destiny charts", "Tử Vi & Bát Tự"),
   tabDharma: bi("Buddhist path", "Phật pháp"),
   tabLibrary: bi("Library", "Thư viện"),
+  tabTarot: bi("Tarot", "Tarot"),
 
   // Profile
   profileTitle: bi("Your profile", "Hồ sơ của bạn"),
@@ -177,6 +178,25 @@ export const UI = {
     "Claude luận giải lá số Tử Vi và Bát Tự cùng hoàn cảnh hiện tại của bạn: tính cách, điểm mạnh, sự nghiệp, tình cảm và vận hạn hiện tại.",
   ),
   receiveChart: bi("Read my charts", "Luận giải lá số"),
+  scopeTitle: bi("Data used for the reading", "Dữ liệu dùng để luận giải"),
+  scopeFull: bi("Everything", "Đầy đủ"),
+  scopeProfile: bi("Profile only", "Chỉ Hồ sơ"),
+  scopeBirth: bi("Birth data only", "Chỉ ngày giờ sinh"),
+  scopeCards: bi("Cards & question only", "Chỉ lá bài & câu hỏi"),
+  scopeFullHint: bi(
+    "Profile, charts, check-ins, diary, meditation, weather and today's sky.",
+    "Hồ sơ, lá số, check-in, nhật ký, thiền, thời tiết và bầu trời hôm nay.",
+  ),
+  scopeProfileHint: bi(
+    "Only your Profile (including work, goals, challenges) and your birth charts. No check-ins, diary, history or daily data.",
+    "Chỉ Hồ sơ (gồm công việc, mục tiêu, khó khăn) và lá số. Không dùng check-in, nhật ký, lịch sử hay dữ liệu hằng ngày.",
+  ),
+  scopeBirthHint: bi(
+    "Only name, birth date/time/place, gender and the charts: a pure reading, unaffected by what you're doing now.",
+    "Chỉ họ tên, ngày giờ và nơi sinh, giới tính cùng lá số: luận giải thuần túy, không bị ảnh hưởng bởi những gì bạn đang làm.",
+  ),
+  scopeApplyNext: bi("The new choice applies when you press “Read again”.", "Lựa chọn mới sẽ áp dụng khi bạn bấm “Luận giải lại”."),
+  scopeThisChat: bi("This conversation uses", "Cuộc trò chuyện này dùng"),
   chartDisclaimer: bi(
     "Charts use the Vietnamese school with main and key auxiliary stars; treat them as a mirror for reflection.",
     "Lá số theo trường phái Việt Nam với chính tinh và các phụ tinh chính; hãy xem như tấm gương để chiêm nghiệm.",
@@ -209,6 +229,13 @@ export const UI = {
   resume: bi("Continue", "Tiếp tục"),
   finishEarly: bi("End & save", "Kết thúc & lưu"),
   sessionSaved: bi("🙏 Session saved", "🙏 Đã ghi lại buổi thiền"),
+  logManual: bi("Log a session manually", "Ghi thủ công một buổi thiền"),
+  minutesLabel: bi("minutes", "phút"),
+  recentSessions: bi("Recent sessions", "Các buổi gần đây"),
+  timerKeepsRunning: bi(
+    "The timer keeps running if you switch tabs or reload; the screen stays awake.",
+    "Đồng hồ vẫn chạy khi bạn chuyển tab hoặc tải lại trang; màn hình được giữ sáng.",
+  ),
   weekPractice: bi("This week: {s} sessions · {m} minutes", "Tuần này: {s} buổi · {m} phút"),
   breatheIn: bi("Breathing in, I know I'm breathing in", "Thở vào, tôi biết tôi đang thở vào"),
   breatheOut: bi("Breathing out, I smile", "Thở ra, tôi mỉm cười"),
@@ -218,6 +245,40 @@ export const UI = {
     "Claude soi chiếu những gì bạn đang trải qua qua Tứ Diệu Đế và Bát Chánh Đạo.",
   ),
   receiveDharma: bi("Receive Dharma guidance", "Nhận lời Pháp"),
+
+  // Tarot
+  tarotTitle: bi("Tarot reading", "Bói bài Tarot"),
+  tarotIntro: bi(
+    "Hold your question in mind, shuffle, and pick the cards yourself. The cards are a mirror for reflection, not a fixed fate.",
+    "Giữ câu hỏi trong tâm, xáo bài, rồi tự tay chọn từng lá. Lá bài là tấm gương để chiêm nghiệm, không phải số phận định sẵn.",
+  ),
+  tarotQuestion: bi("Your question (optional)", "Câu hỏi của bạn (không bắt buộc)"),
+  tarotQuestionHint: bi("e.g. What do I need to know about this new project?", "VD: Mình cần biết điều gì về dự án mới này?"),
+  tarotSpread: bi("Spread", "Kiểu trải bài"),
+  tarotUseReversals: bi("Use reversed cards", "Dùng lá ngược"),
+  tarotShuffle: bi("Shuffle the deck", "Xáo bài"),
+  tarotReshuffle: bi("Reshuffle", "Xáo lại"),
+  tarotPickRandom: bi("Pick for me", "Rút ngẫu nhiên"),
+  tarotPickPrompt: bi("Breathe, then choose {n} more card(s) from the deck.", "Hít thở, rồi chọn thêm {n} lá từ xấp bài."),
+  tarotCard: bi("Card", "Lá"),
+  tarotInterpret: bi("Read the cards", "Giải bài"),
+  tarotReversed: bi("reversed", "ngược"),
+  tarotMeanings: bi("Card meanings", "Ý nghĩa các lá"),
+  tarotReadingTitle: bi("The reading", "Lời giải bài"),
+  tarotNewDraw: bi("New reading", "Rút lượt mới"),
+  tarotLastReading: bi("See last reading", "Xem lượt gần nhất"),
+  tarotNoQuestion: bi("A general message for now", "Thông điệp chung cho lúc này"),
+  tarotScopeCardsHint: bi("Only your question and the cards: a pure reading.", "Chỉ câu hỏi và các lá bài: giải bài thuần túy."),
+  tarotScopeProfileHint: bi("Adds your Profile (work, goals, challenges) for a more personal reading.", "Thêm Hồ sơ (công việc, mục tiêu, khó khăn) để lời giải sát với bạn hơn."),
+  tarotScopeFullHint: bi("Adds everything: check-ins, diary, charts and today's energies.", "Thêm mọi thứ: check-in, nhật ký, lá số và năng lượng hôm nay."),
+  tarotCardsOnlyNote: bi(
+    "Read only from the cards and my question; you intentionally know nothing else about me.",
+    "Chỉ giải từ các lá bài và câu hỏi của mình; bạn cố ý không biết gì thêm về mình.",
+  ),
+  tarotDisclaimer: bi(
+    "Shuffled with your browser's cryptographic random generator. For reflection and inspiration, not for medical, legal or financial decisions.",
+    "Bài được xáo bằng bộ sinh số ngẫu nhiên mật mã của trình duyệt. Dùng để chiêm nghiệm và gợi cảm hứng, không thay cho quyết định y tế, pháp lý hay tài chính.",
+  ),
 
   // Library
   libTitle: bi("Readings library", "Thư viện luận giải"),

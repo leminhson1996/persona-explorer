@@ -1,79 +1,26 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { fmt, useT } from "../lib/i18n";
 import { buddhistCalendar, meditationStats, readMind } from "../lib/dharma";
-import { localDateKey, uid } from "../lib/storage";
+import { meditation, useMeditation, useMeditationClock } from "../lib/meditationStore";
+import { localDateKey } from "../lib/storage";
 import type { CheckIn, Meditation } from "../lib/types";
-
-/** A soft singing-bowl bell synthesized with WebAudio. */
-function ringBell() {
-  try {
-    const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    const ctx = new Ctx();
-    const now = ctx.currentTime;
-    [[392, 0.5], [784, 0.22], [1176, 0.12], [1568, 0.06]].forEach(([freq, gain]) => {
-      const osc = ctx.createOscillator();
-      const g = ctx.createGain();
-      osc.type = "sine";
-      osc.frequency.value = freq;
-      g.gain.setValueAtTime(0.0001, now);
-      g.gain.exponentialRampToValueAtTime(gain, now + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.0001, now + 6);
-      osc.connect(g).connect(ctx.destination);
-      osc.start(now);
-      osc.stop(now + 6.1);
-    });
-    setTimeout(() => ctx.close(), 6500);
-  } catch {
-    /* audio unavailable */
-  }
-}
 
 const DURATIONS = [5, 10, 15, 20, 30];
 
-function MeditationTimer({ sessions, onSave }: { sessions: Meditation[]; onSave: (m: Meditation) => void }) {
-  const { t } = useT();
-  const [minutes, setMinutes] = useState(10);
-  const [remaining, setRemaining] = useState(10 * 60);
-  const [running, setRunning] = useState(false);
-  const [started, setStarted] = useState(false);
-  const [flash, setFlash] = useState(false);
-  const endAt = useRef(0);
+function MeditationTimer({ sessions }: { sessions: Meditation[] }) {
+  const { t, lang } = useT();
+  const timer = useMeditation();
+  const remaining = useMeditationClock();
   const stats = meditationStats(sessions, new Date());
-
-  const finish = (secondsDone: number) => {
-    setRunning(false);
-    setStarted(false);
-    setRemaining(minutes * 60);
-    const done = Math.round((secondsDone / 60) * 10) / 10;
-    if (done >= 1) {
-      onSave({ id: uid(), date: localDateKey(), createdAt: new Date().toISOString(), minutes: done });
-      setFlash(true);
-      setTimeout(() => setFlash(false), 4000);
-    }
-  };
-
-  useEffect(() => {
-    if (!running) return;
-    const id = setInterval(() => {
-      const left = Math.max(0, Math.round((endAt.current - Date.now()) / 1000));
-      setRemaining(left);
-      if (left === 0) {
-        ringBell();
-        finish(minutes * 60);
-      }
-    }, 250);
-    return () => clearInterval(id);
-  }, [running]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const start = () => {
-    if (!started) ringBell();
-    endAt.current = Date.now() + remaining * 1000;
-    setStarted(true);
-    setRunning(true);
-  };
-
-  const mm = String(Math.floor(remaining / 60)).padStart(2, "0");
-  const ss = String(remaining % 60).padStart(2, "0");
+  const running = timer.status === "running";
+  const started = timer.status !== "idle";
+  const recent = [...sessions].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 5);
+  const [manual, setManual] = useState(false);
+  const [manualMin, setManualMin] = useState(15);
+  const [manualDate, setManualDate] = useState(localDateKey());
+  const secs = Math.ceil(remaining / 1000);
+  const mm = String(Math.floor(secs / 60)).padStart(2, "0");
+  const ss = String(secs % 60).padStart(2, "0");
 
   return (
     <section className="card meditation">
@@ -92,7 +39,7 @@ function MeditationTimer({ sessions, onSave }: { sessions: Meditation[]; onSave:
       {!started && (
         <div className="chips center-chips">
           {DURATIONS.map((d) => (
-            <button key={d} className={d === minutes ? "chip on" : "chip"} onClick={() => { setMinutes(d); setRemaining(d * 60); }}>
+            <button key={d} className={d === timer.minutes ? "chip on" : "chip"} onClick={() => meditation.choose(d)}>
               {fmt(t("minutes"), { n: d })}
             </button>
           ))}
@@ -100,13 +47,43 @@ function MeditationTimer({ sessions, onSave }: { sessions: Meditation[]; onSave:
       )}
       <div className="row center-row">
         {!running ? (
-          <button className="primary" onClick={start}>{started ? t("resume") : t("start")}</button>
+          <button className="primary" onClick={() => meditation.start()}>{started ? t("resume") : t("start")}</button>
         ) : (
-          <button className="ghost" onClick={() => setRunning(false)}>{t("pause")}</button>
+          <button className="ghost" onClick={() => meditation.pause()}>{t("pause")}</button>
         )}
-        {started && <button className="ghost" onClick={() => finish(minutes * 60 - remaining)}>{t("finishEarly")}</button>}
+        {started && <button className="ghost" onClick={() => meditation.finishEarly()}>{t("finishEarly")}</button>}
       </div>
-      <p className="tiny muted center">{flash ? t("sessionSaved") : fmt(t("weekPractice"), { s: stats.weekSessions, m: stats.weekMinutes })}</p>
+      <p className="tiny muted center">
+        {timer.justSaved !== null
+          ? `${t("sessionSaved")} · ${fmt(t("minutes"), { n: timer.justSaved })}`
+          : fmt(t("weekPractice"), { s: stats.weekSessions, m: stats.weekMinutes })}
+      </p>
+      {started && <p className="tiny muted center">{t("timerKeepsRunning")}</p>}
+      {recent.length > 0 && (
+        <>
+          <h4>{t("recentSessions")}</h4>
+          <ul className="sessions">
+            {recent.map((m) => (
+              <li key={m.id}>
+                <span>{new Date(`${m.date}T12:00:00`).toLocaleDateString(lang === "vi" ? "vi-VN" : "en-US", { weekday: "short", day: "numeric", month: "short" })}{m.id.startsWith("manual-") ? " ✍️" : ""}</span>
+                <span className="muted">{fmt(t("minutes"), { n: m.minutes })}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      {!started && (
+        !manual ? (
+          <p className="center"><button className="link" onClick={() => setManual(true)}>+ {t("logManual")}</button></p>
+        ) : (
+          <div className="row center-row wrap">
+            <input type="number" min={1} max={600} className="narrow-num" aria-label={t("minutesLabel")} value={manualMin} onChange={(e) => setManualMin(+e.target.value)} />
+            <span className="small muted">{t("minutesLabel")}</span>
+            <input type="date" className="date-input" value={manualDate} max={localDateKey()} onChange={(e) => setManualDate(e.target.value)} />
+            <button className="primary" onClick={() => { meditation.logManual(manualMin, manualDate); setManual(false); }}>{t("save")}</button>
+          </div>
+        )
+      )}
     </section>
   );
 }
@@ -115,12 +92,11 @@ interface Props {
   now: Date;
   checkin?: CheckIn;
   meditations: Meditation[];
-  onSaveMeditation: (m: Meditation) => void;
   onGoCheckin: () => void;
   children?: ReactNode;
 }
 
-export default function Dharma({ now, checkin, meditations, onSaveMeditation, onGoCheckin, children }: Props) {
+export default function Dharma({ now, checkin, meditations, onGoCheckin, children }: Props) {
   const { t, tr, lang } = useT();
   const cal = buddhistCalendar(now);
   const mind = readMind(checkin);
@@ -180,7 +156,7 @@ export default function Dharma({ now, checkin, meditations, onSaveMeditation, on
           )}
         </section>
 
-        <MeditationTimer sessions={meditations} onSave={onSaveMeditation} />
+        <MeditationTimer sessions={meditations} />
 
         <section className="card">
           <h3>📿 {t("upcoming")}</h3>

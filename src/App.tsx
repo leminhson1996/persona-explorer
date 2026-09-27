@@ -6,22 +6,25 @@ import type { CheckIn, CheckInEnv, CosmosData, DiaryEntry, EnvDaily, EnvNow, Med
 import { sunTimes } from "./lib/astro";
 import { moonIlluminationOn } from "./lib/insights";
 import { guide, useStreamingKinds } from "./lib/guideStore";
+import { meditation, useMeditationRunning } from "./lib/meditationStore";
 import ProfileForm from "./components/ProfileForm";
 import CheckInCard from "./components/CheckInCard";
 import Dashboard from "./components/Dashboard";
 import CosmosCard from "./components/CosmosCard";
-import GuidancePanel from "./components/GuidancePanel";
+import GuidancePanel, { buildContextFor } from "./components/GuidancePanel";
+import Tarot from "./components/Tarot";
+import { describeProfile } from "./lib/snapshot";
 import Journal from "./components/Journal";
 import Charts from "./components/Charts";
 import Dharma from "./components/Dharma";
 import Library from "./components/Library";
 import Starfield from "./components/Starfield";
 
-type Tab = "today" | "charts" | "dharma" | "library" | "journal" | "profile";
+type Tab = "today" | "charts" | "dharma" | "tarot" | "library" | "journal" | "profile";
 
-const KIND_TAB: Record<ReadingKind, Tab> = { daily: "today", chart: "charts", dharma: "dharma" };
+const KIND_TAB: Record<ReadingKind, Tab> = { daily: "today", chart: "charts", dharma: "dharma", tarot: "tarot" };
 
-const TAB_LABEL = { today: "tabToday", charts: "tabCharts", dharma: "tabDharma", library: "tabLibrary", journal: "tabJournal", profile: "tabProfile" } as const;
+const TAB_LABEL = { today: "tabToday", charts: "tabCharts", dharma: "tabDharma", tarot: "tabTarot", library: "tabLibrary", journal: "tabJournal", profile: "tabProfile" } as const;
 
 const initialLang = (): Lang => store.loadLang() ?? (navigator.language.startsWith("vi") ? "vi" : "en");
 
@@ -156,7 +159,16 @@ export default function App() {
   // The guide store streams readings in the background and saves through here.
   guide.setSaver(upsertReading);
   const streamingKinds = useStreamingKinds();
-  const streamingTabs = streamingKinds.map((k) => KIND_TAB[k]);
+  const meditating = useMeditationRunning();
+  const streamingTabs = [...streamingKinds.map((k) => KIND_TAB[k]), ...(meditating ? (["dharma"] as Tab[]) : [])];
+  // The meditation timer runs app-wide and saves finished sessions here (upsert by session id).
+  const meditationsRef = useRef(meditations);
+  meditationsRef.current = meditations;
+  meditation.setSaver((m) => {
+    const next = [...meditationsRef.current.filter((x) => x.id !== m.id), m];
+    meditationsRef.current = next;
+    saveMeditations(next);
+  });
 
 
   // Backfill conditions for older check-ins that have none (weather history from Open-Meteo).
@@ -197,6 +209,7 @@ export default function App() {
   const todayReading = [...readings].reverse().find((r) => r.date === today && (r.kind ?? "daily") === "daily");
   const dharmaReading = [...readings].reverse().find((r) => r.date === today && r.kind === "dharma");
   const chartReading = [...readings].reverse().find((r) => r.kind === "chart");
+  const tarotReading = [...readings].reverse().find((r) => r.kind === "tarot");
   const recent = checkins.slice(-8, todayCheckin ? -1 : undefined);
   const todayDiaryCount = diary.filter((d) => d.date === today).length;
 
@@ -230,7 +243,7 @@ export default function App() {
         ) : (
           <>
             <nav className="tabs">
-              {(["today", "charts", "dharma", "library", "journal", "profile"] as const).map((t) => (
+              {(["today", "charts", "dharma", "tarot", "library", "journal", "profile"] as const).map((t) => (
                 <button key={t} className={tab === t ? "on" : ""} onClick={() => setTab(t)}>
                   {UI[TAB_LABEL[t]][lang]}
                   {streamingTabs.includes(t) && <span className="live-dot" aria-label={UI.libWriting[lang]} />}
@@ -294,7 +307,6 @@ export default function App() {
                   now={now}
                   checkin={todayCheckin}
                   meditations={meditations}
-                  onSaveMeditation={(m) => saveMeditations([...meditations, m])}
                   onGoCheckin={() => setTab("today")}
                 >
                   <GuidancePanel
@@ -312,6 +324,18 @@ export default function App() {
                     today={today}
                   />
                 </Dharma>
+              )}
+              {tab === "tarot" && snapshot && (
+                <Tarot
+                  reading={tarotReading}
+                  today={today}
+                  contextFor={(scope) =>
+                    // For tarot, "profile" means the profile itself (no birth charts), to keep the reading focused.
+                    scope === "profile"
+                      ? describeProfile(profile)
+                      : buildContextFor(scope, { diary, meditations, profile, snapshot, cosmos, env, allCheckins: checkins, checkin: todayCheckin, recent, today })
+                  }
+                />
               )}
               {tab === "library" && (
                 <Library
