@@ -1,11 +1,12 @@
 import type { CheckIn, DiaryEntry, Meditation, Profile, Reading } from "./types";
+import { emptyQuoteState, type QuoteState } from "./buddhaQuotes";
 
 // Source of truth: JSON files in ./my_data on our server. The browser keeps a cache in localStorage
 // so the app still works (and later catches up) if the server is down.
 
-const KEYS = { profile: "ue.profile", checkins: "ue.checkins", readings: "ue.readings", diary: "ue.diary", meditations: "ue.meditations", lang: "ue.lang" } as const;
+const KEYS = { profile: "ue.profile", checkins: "ue.checkins", readings: "ue.readings", diary: "ue.diary", meditations: "ue.meditations", quotes: "ue.quotes", lang: "ue.lang" } as const;
 type LocalKey = keyof typeof KEYS;
-const SERVER_KEY: Record<LocalKey, string> = { profile: "profile", checkins: "checkins", readings: "readings", diary: "diary", meditations: "meditations", lang: "settings" };
+const SERVER_KEY: Record<LocalKey, string> = { profile: "profile", checkins: "checkins", readings: "readings", diary: "diary", meditations: "meditations", quotes: "quotes", lang: "settings" };
 const META_KEY = "ue.meta"; // last local write time per key
 
 function read<T>(key: string, fallback: T): T {
@@ -128,6 +129,8 @@ export const store = {
   saveDiary: (d: DiaryEntry[]) => save("diary", d),
   loadMeditations: () => read<Meditation[]>(KEYS.meditations, []),
   saveMeditations: (m: Meditation[]) => save("meditations", m),
+  loadQuotes: () => read<QuoteState>(KEYS.quotes, emptyQuoteState()),
+  saveQuotes: (q: QuoteState) => save("quotes", q),
   loadLang: () => read<"en" | "vi" | null>(KEYS.lang, null),
   saveLang: (l: "en" | "vi") => save("lang", l),
   clear: async () => {
@@ -149,6 +152,7 @@ export interface Backup {
   readings: Reading[];
   diary?: DiaryEntry[];
   meditations?: Meditation[];
+  quotes?: QuoteState;
 }
 
 export const makeBackup = (): Backup => ({
@@ -159,6 +163,7 @@ export const makeBackup = (): Backup => ({
   readings: store.loadReadings(),
   diary: store.loadDiary(),
   meditations: store.loadMeditations(),
+  quotes: store.loadQuotes(),
 });
 
 export function isBackup(x: unknown): x is Backup {

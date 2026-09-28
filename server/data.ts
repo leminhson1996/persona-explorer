@@ -7,7 +7,7 @@ export const DATA_DIR = path.resolve(
   process.env.DATA_DIR || path.join(path.dirname(fileURLToPath(import.meta.url)), "../my_data"),
 );
 
-export const DATA_KEYS = ["profile", "checkins", "readings", "diary", "meditations", "settings"] as const;
+export const DATA_KEYS = ["profile", "checkins", "readings", "diary", "meditations", "quotes", "settings"] as const;
 export type DataKey = (typeof DATA_KEYS)[number];
 
 export const isDataKey = (k: string): k is DataKey => (DATA_KEYS as readonly string[]).includes(k);

@@ -93,10 +93,11 @@ interface Props {
   checkin?: CheckIn;
   meditations: Meditation[];
   onGoCheckin: () => void;
+  words?: ReactNode; // "Words of the Buddha", shown right under the header
   children?: ReactNode;
 }
 
-export default function Dharma({ now, checkin, meditations, onGoCheckin, children }: Props) {
+export default function Dharma({ now, checkin, meditations, onGoCheckin, words, children }: Props) {
   const { t, tr, lang } = useT();
   const cal = buddhistCalendar(now);
   const mind = readMind(checkin);
@@ -121,6 +122,8 @@ export default function Dharma({ now, checkin, meditations, onGoCheckin, childre
           </div>
         </div>
       </section>
+
+      {words}
 
       <div className="cards">
         <section className="card">

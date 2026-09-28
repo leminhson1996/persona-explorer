@@ -122,6 +122,7 @@ export default function ProfileForm({ initial, onSave, onboarding, onRestore, on
       store.saveReadings(data.readings ?? []);
       store.saveDiary(data.diary ?? []);
       store.saveMeditations(data.meditations ?? []);
+      if (data.quotes) store.saveQuotes(data.quotes);
       if (data.profile) setP(data.profile);
       onRestore?.();
     } catch {

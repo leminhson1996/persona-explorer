@@ -573,3 +573,30 @@ button:disabled { opacity: 0.5; cursor: default; }
 .physio-voice { padding: 12px; border-radius: 14px; background: var(--field); border: 1px solid var(--field-border); margin-bottom: 12px; display: grid; gap: 6px; }
 .physio-voice h4 { margin: 0; }
 .physio-voice .passage { background: var(--card); }
+
+/* Words of the Buddha */
+.bquote { margin: 0; display: grid; gap: 6px; }
+.bquote blockquote { margin: 0; font: 500 1.05rem/1.6 var(--serif); }
+.bquote.large blockquote { font-size: 1.45rem; line-height: 1.5; color: var(--text); }
+.bquote figcaption { display: grid; gap: 2px; }
+.bsource { font-size: 0.85rem; color: var(--accent-2); }
+.boriginal { font-size: 0.8rem; color: var(--muted); font-style: italic; }
+.btoday, .bchoose { display: grid; gap: 12px; padding: 16px; border-radius: 14px; margin: 10px 0 12px;
+  background: radial-gradient(circle at 10% 0%, color-mix(in srgb, var(--accent-2) 12%, transparent), transparent 60%), var(--field); }
+.bgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.bgrid .relation { margin-top: 0; }
+@media (max-width: 700px) { .bgrid { grid-template-columns: 1fr; } }
+.actions.start { justify-content: flex-start; }
+.bbrowse, .bhistory { margin-top: 10px; }
+.bbrowse > summary, .bhistory > summary { cursor: pointer; margin-bottom: 8px; }
+.blist { list-style: none; padding: 0; margin: 10px 0; display: grid; gap: 10px; }
+.blist > li { padding: 12px 14px; border-radius: 12px; background: var(--field); border: 1px solid var(--field-border); display: grid; gap: 8px; }
+.blist > li.on { border-color: var(--accent-2); }
+.blist.compact > li { gap: 4px; padding: 10px 12px; }
+.star { background: none; border: 0; font-size: 1.2rem; color: var(--muted); padding: 0 4px; }
+.star.on { color: var(--accent-2); }
+.quote-banner { display: grid; gap: 4px; text-align: left; width: 100%; color: var(--text); padding: 14px 20px;
+  background: radial-gradient(circle at 0% 50%, color-mix(in srgb, var(--accent-2) 14%, transparent), transparent 55%), var(--card); }
+.quote-banner:hover { border-color: var(--accent-2); }
+.quote-banner .quote-line { font: 500 1.1rem/1.5 var(--serif); }
+.quote-banner.empty { color: var(--accent-2); font-weight: 600; padding: 12px 20px; }

@@ -4,6 +4,7 @@ import { describeCheckin, describeCosmos, describeDiary, describeNatalCharts, de
 import { guide, useGuide } from "../lib/guideStore";
 import ChatThread from "./ChatThread";
 import { describeDharma } from "../lib/dharma";
+import { describeQuote, type QuoteState } from "../lib/buddhaQuotes";
 import { describeEnvironment } from "../lib/environment";
 import { describeInsights } from "../lib/insights";
 import type { ChatMsg, CheckIn, ContextScope, CosmosData, DiaryEntry, EnvNow, Meditation, Profile, Reading } from "../lib/types";
@@ -76,6 +77,7 @@ export interface ContextSources {
   checkin?: CheckIn;
   recent: CheckIn[];
   today: string;
+  quotes?: QuoteState;
 }
 
 /** Everything Claude may see, trimmed to the chosen scope. */
@@ -88,6 +90,7 @@ export function buildContextFor(ctx: ContextScope, x: ContextSources): string {
     describeEnvironment(x.env ?? null, x.snapshot.nature.place.label ?? "their location"),
     describeCosmos(x.cosmos ?? null), describeInsights(x.allCheckins), describeRecent(x.recent),
     describeDiary(x.diary, x.today), describeDharma(x.snapshot.now, x.checkin, x.meditations),
+    x.quotes ? describeQuote(x.quotes, x.today) : "",
   ].filter(Boolean).join("\n\n");
 }
 
@@ -102,11 +105,12 @@ interface Props {
   allCheckins: CheckIn[];
   checkin?: CheckIn;
   recent: CheckIn[];
+  quotes?: QuoteState;
   reading?: Reading;
   today: string;
 }
 
-export default function GuidancePanel({ kind = "daily", diary, meditations, profile, snapshot, cosmos, env, allCheckins, checkin, recent, reading, today }: Props) {
+export default function GuidancePanel({ kind = "daily", diary, meditations, profile, snapshot, cosmos, env, allCheckins, quotes, checkin, recent, reading, today }: Props) {
   const { t, lang } = useT();
   const session = useGuide(kind);
   const scope = kind === "chart" ? "chart" : today;
@@ -138,7 +142,7 @@ export default function GuidancePanel({ kind = "daily", diary, meditations, prof
   const busy = (session?.pending ?? null) !== null;
 
   const buildContext = (ctx: ContextScope) =>
-    buildContextFor(ctx, { diary, meditations, profile, snapshot, cosmos, env, allCheckins, checkin, recent, today });
+    buildContextFor(ctx, { diary, meditations, profile, snapshot, cosmos, env, allCheckins, checkin, recent, today, quotes });
 
   const send = (history: ChatMsg[], ctx: ContextScope) => void guide.send(kind, history, { lang, context: buildContext(ctx) });
 

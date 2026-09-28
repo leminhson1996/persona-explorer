@@ -21,6 +21,8 @@ import Journal from "./components/Journal";
 import Charts from "./components/Charts";
 import Dharma from "./components/Dharma";
 import Library from "./components/Library";
+import BuddhaWords from "./components/BuddhaWords";
+import { quoteById, quoted, type QuoteState } from "./lib/buddhaQuotes";
 import Starfield from "./components/Starfield";
 
 type Tab = "today" | "charts" | "dharma" | "tarot" | "physio" | "progress" | "library" | "journal" | "profile";
@@ -38,6 +40,7 @@ export default function App() {
   const [readings, setReadings] = useState<Reading[]>(store.loadReadings);
   const [diary, setDiary] = useState<DiaryEntry[]>(store.loadDiary);
   const [meditations, setMeditations] = useState<Meditation[]>(store.loadMeditations);
+  const [quotes, setQuotes] = useState<QuoteState>(store.loadQuotes);
   const [tab, setTab] = useState<Tab>("today");
   const [now, setNow] = useState(() => new Date());
   const [cosmos, setCosmos] = useState<CosmosData | null | undefined>(undefined);
@@ -56,6 +59,7 @@ export default function App() {
         setReadings(store.loadReadings());
         setDiary(store.loadDiary());
         setMeditations(store.loadMeditations());
+        setQuotes(store.loadQuotes());
         const l = store.loadLang();
         if (l) setLang(l);
       }
@@ -150,6 +154,10 @@ export default function App() {
     setDiary(d);
     store.saveDiary(d);
   };
+  const saveQuotes = (q: QuoteState) => {
+    setQuotes(q);
+    store.saveQuotes(q);
+  };
   const saveMeditations = (m: Meditation[]) => {
     setMeditations(m);
     store.saveMeditations(m);
@@ -216,6 +224,7 @@ export default function App() {
   const physioReading = [...readings].reverse().find((r) => r.kind === "physio");
   const recent = checkins.slice(-8, todayCheckin ? -1 : undefined);
   const todayDiaryCount = diary.filter((d) => d.date === today).length;
+  const todayQuote = quoteById(quotes.picks.find((p) => p.date === today)?.id ?? "");
 
   return (
     <LangContext.Provider value={lang}>
@@ -257,6 +266,17 @@ export default function App() {
             <main>
               {tab === "today" && snapshot && (
                 <div className="today">
+                  {todayQuote ? (
+                    <button className="card quote-banner" onClick={() => setTab("dharma")}>
+                      <span className="eyebrow">📿 {UI.quoteOfDay[lang]}</span>
+                      <span className="quote-line">{quoted(todayQuote.text[lang])}</span>
+                      <span className="tiny muted">— {todayQuote.source[lang]}</span>
+                    </button>
+                  ) : (
+                    <button className="card quote-banner empty" onClick={() => setTab("dharma")}>
+                      <span>📿 {UI.chooseQuote[lang]} →</span>
+                    </button>
+                  )}
                   <Dashboard s={snapshot} env={env}>
                     <CosmosCard data={cosmos} />
                   </Dashboard>
@@ -281,6 +301,7 @@ export default function App() {
                       cosmos={cosmos}
                       env={env}
                       allCheckins={checkins}
+                      quotes={quotes}
                       checkin={todayCheckin}
                       recent={recent}
                       reading={todayReading}
@@ -300,6 +321,7 @@ export default function App() {
                     cosmos={cosmos}
                     env={env}
                     allCheckins={checkins}
+                    quotes={quotes}
                     checkin={todayCheckin}
                     recent={recent}
                     reading={chartReading}
@@ -313,6 +335,7 @@ export default function App() {
                   checkin={todayCheckin}
                   meditations={meditations}
                   onGoCheckin={() => setTab("today")}
+                  words={<BuddhaWords state={quotes} today={today} onChange={saveQuotes} />}
                 >
                   <GuidancePanel
                     kind="dharma"
@@ -323,6 +346,7 @@ export default function App() {
                     cosmos={cosmos}
                     env={env}
                     allCheckins={checkins}
+                    quotes={quotes}
                     checkin={todayCheckin}
                     recent={recent}
                     reading={dharmaReading}
@@ -384,6 +408,7 @@ export default function App() {
                     setReadings(store.loadReadings());
                     setDiary(store.loadDiary());
                     setMeditations(store.loadMeditations());
+                    setQuotes(store.loadQuotes());
                   }}
                   onReset={() => {
                     void store.clear();
@@ -392,6 +417,7 @@ export default function App() {
                     setReadings([]);
                     setDiary([]);
                     setMeditations([]);
+                    setQuotes({ picks: [], favorites: [] });
                     setTab("today");
                   }}
                 />

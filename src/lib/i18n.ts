@@ -210,6 +210,8 @@ export const UI = {
   ),
 
   // Buddhist path
+  quoteOfDay: bi("The Buddha's words you chose for today", "Lời Phật dạy bạn chọn cho hôm nay"),
+  chooseQuote: bi("Choose the Buddha's words to carry today", "Chọn một lời Phật dạy để mang theo hôm nay"),
   dharmaTitle: bi("The Buddhist path", "Góc nhìn Phật pháp"),
   dharmaIntro: bi(
     "Not fortune-telling: a look at your mind today through the Buddha's teaching, and a way to practice.",
