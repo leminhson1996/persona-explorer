@@ -27,6 +27,7 @@ export const UI = {
   tabTarot: bi("Tarot", "Tarot"),
   tabProgress: bi("Progress", "Tổng hợp"),
   tabPhysio: bi("Face & palm", "Nhân tướng"),
+  tabAcu: bi("Acupressure", "Bấm huyệt"),
 
   // Profile
   profileTitle: bi("Your profile", "Hồ sơ của bạn"),

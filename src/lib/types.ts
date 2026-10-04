@@ -115,7 +115,7 @@ export interface ChatMsg {
   imageCount?: number; // how many photos were attached (kept after the images are stripped)
 }
 
-export type ReadingKind = "daily" | "chart" | "dharma" | "tarot" | "progress" | "physio";
+export type ReadingKind = "daily" | "chart" | "dharma" | "tarot" | "progress" | "physio" | "acu";
 /** What a reading was allowed to see: everything, the profile only, or just the birth data. */
 export type ContextScope = "full" | "profile" | "birth" | "cards";
 

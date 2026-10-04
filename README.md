@@ -15,6 +15,7 @@ It combines:
 | Tarot | Full 78-card Rider–Waite–Smith deck (bilingual names, upright/reversed meanings), 4 spreads (card of the day, past/present/future, situation/challenge/advice, Celtic Cross), cryptographic shuffle, pick your own cards; Claude reads the spread with a choice of cards-only, +profile or full context | `src/lib/tarot.ts` |
 | Face & palm (Nhân tướng) | Photos of your face (front and side profile for ears/temples) and palms, plus your voice. In the browser, MediaPipe Face Landmarker (478 points), Hair Segmenter (real hairline) and Hand Landmarker (21 points, 3D) measure the Three courts, face shape by the five elements, eye/brow/nose/mouth proportions, symmetry, hand type, finger ratios (2D:4D). Claude then reads the photos with Eastern physiognomy (Tam đình, Ngũ nhạc, Ngũ quan, 12 palaces) and palmistry (lines, mounts). Own photos only; photos are never stored unless you opt into small thumbnails | `src/lib/physiognomy.ts` |
 | Voice | 20–30 s read-aloud sample analyzed in the browser: pitch (YIN), intonation, clarity (HNR, Boersma autocorrelation), brightness (FFT spectral centroid), pace (syllable nuclei after De Jong & Wempe, tuned on Vietnamese), pauses, loudness. Used for the Five Tones (Ngũ âm) in Nhân tướng and for optional daily voice check-ins compared with your own baseline. Audio is never stored or uploaded | `src/lib/voice.ts` |
+| Acupressure (Bấm huyệt) | 80 points (WHO standard locations, Hán-Việt/pinyin/English names, how to find and press, cautions, 🤰 pregnancy flags) and 37 symptoms (accent- and typo-tolerant search: "ho khang" finds Ho khan), each with self-care tips and when to see a doctor; emergency phrases (chest pain, stroke signs…) show a 115 alert instead. Points are shown on a 3D mannequin (three.js), placed by the traditional cun proportions (elbow→wrist = 12 cun, knee→ankle = 16…) and snapped onto the skin; preset views for face, nape, palm, back of hand, foot and sole. Claude can also suggest points for a free-text description, choosing only from the catalog | `src/lib/acupoints.ts`, `src/lib/body3d.ts` |
 | Nature | Season, sunrise/sunset, daylight, next full/new moon | `astronomy-engine` |
 | Weather & air | Temperature, feels-like/heat stress, humidity, 24h pressure change, UV (and high-UV hours), rain, US AQI and PM2.5, plus body-clock tips from real sunrise/sunset | Open-Meteo (free, no key) |
 | Sky events | Planets visible this evening and before dawn from your location, next meteor showers (with Moon brightness), next lunar/solar eclipses and the next one visible where you live | `astronomy-engine` |
@@ -93,6 +94,9 @@ src/
   lib/numerology.ts  Numerology numbers and meanings
   lib/snapshot.ts    Combines everything and renders the context sent to Claude
   lib/i18n.ts        English / Vietnamese strings
+  lib/acupoints.ts   Acupoints, symptoms and search
+  lib/body3d.ts      Procedural 3D body with landmarks and cun proportions
+  lib/acuPlacement.ts Where each acupoint sits on the body
   components/        Dashboard, check-in, NASA card, guidance chat, journal, profile
 ```
 
