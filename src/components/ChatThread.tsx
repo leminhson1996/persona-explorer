@@ -9,10 +9,12 @@ interface Props {
   reading?: Reading;
   /** Builds the context for follow-ups, using the scope fixed for this conversation. */
   contextFor: (scope: ContextScope) => string;
+  /** Lets a kind hide machinery it renders elsewhere (the ripple map's data block, say). */
+  clean?: (text: string) => string;
 }
 
 /** The conversation for one kind: answers (live while streaming), notes, and the follow-up box. */
-export default function ChatThread({ kind, reading, contextFor }: Props) {
+export default function ChatThread({ kind, reading, contextFor, clean = (x) => x }: Props) {
   const { t, lang } = useT();
   const session = useGuide(kind);
   const [input, setInput] = useState("");
@@ -48,14 +50,14 @@ export default function ChatThread({ kind, reading, contextFor }: Props) {
       <div className="thread">
         {messages.slice(1).map((m, i) =>
           m.role === "assistant" ? (
-            <article key={i} className="msg guide"><ReactMarkdown>{m.content}</ReactMarkdown></article>
+            <article key={i} className="msg guide"><ReactMarkdown>{clean(m.content)}</ReactMarkdown></article>
           ) : (
             <p key={i} className="msg me"><span className="who">{t("you")}</span>{m.content}</p>
           ),
         )}
         {busy && (
           <article className="msg guide">
-            {pending ? <ReactMarkdown>{pending}</ReactMarkdown> : <p className="shimmer">{t("thinking")}</p>}
+            {pending ? <ReactMarkdown>{clean(pending)}</ReactMarkdown> : <p className="shimmer">{t("thinking")}</p>}
           </article>
         )}
         {interrupted && <p className="hint">⚠️ {t("interruptedNote")}</p>}

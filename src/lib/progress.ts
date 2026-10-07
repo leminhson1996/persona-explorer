@@ -126,7 +126,7 @@ export function buildProgress(
 
   // Readings by kind, and tarot cards that keep coming up.
   const periodReadings = data.readings.filter((r) => dateSet.has(r.date));
-  const byKind: Record<ReadingKind, number> = { daily: 0, chart: 0, dharma: 0, tarot: 0, progress: 0, physio: 0, acu: 0 };
+  const byKind: Record<ReadingKind, number> = { daily: 0, chart: 0, dharma: 0, tarot: 0, progress: 0, physio: 0, acu: 0, ripple: 0 };
   periodReadings.forEach((r) => byKind[r.kind ?? "daily"]++);
   const cardCounts = new Map<string, number>();
   periodReadings.forEach((r) => r.tarot?.cards.forEach((c) => cardCounts.set(c.id, (cardCounts.get(c.id) ?? 0) + 1)));

@@ -23,15 +23,16 @@ import Dharma from "./components/Dharma";
 import Library from "./components/Library";
 import BuddhaWords from "./components/BuddhaWords";
 import { quoteById, quoted, type QuoteState } from "./lib/buddhaQuotes";
+import Ripple from "./components/Ripple";
 import Starfield from "./components/Starfield";
 // Three.js is large; load the acupressure tab only when it is opened.
 const Acupressure = lazy(() => import("./components/Acupressure"));
 
-type Tab = "today" | "charts" | "dharma" | "tarot" | "physio" | "acu" | "progress" | "library" | "journal" | "profile";
+type Tab = "today" | "charts" | "dharma" | "tarot" | "physio" | "acu" | "ripple" | "progress" | "library" | "journal" | "profile";
 
-const KIND_TAB: Record<ReadingKind, Tab> = { daily: "today", chart: "charts", dharma: "dharma", tarot: "tarot", progress: "progress", physio: "physio", acu: "acu" };
+const KIND_TAB: Record<ReadingKind, Tab> = { daily: "today", chart: "charts", dharma: "dharma", tarot: "tarot", progress: "progress", physio: "physio", acu: "acu", ripple: "ripple" };
 
-const TAB_LABEL = { today: "tabToday", charts: "tabCharts", dharma: "tabDharma", tarot: "tabTarot", physio: "tabPhysio", acu: "tabAcu", progress: "tabProgress", library: "tabLibrary", journal: "tabJournal", profile: "tabProfile" } as const;
+const TAB_LABEL = { today: "tabToday", charts: "tabCharts", dharma: "tabDharma", tarot: "tabTarot", physio: "tabPhysio", acu: "tabAcu", ripple: "tabRipple", progress: "tabProgress", library: "tabLibrary", journal: "tabJournal", profile: "tabProfile" } as const;
 
 const initialLang = (): Lang => store.loadLang() ?? (navigator.language.startsWith("vi") ? "vi" : "en");
 
@@ -225,6 +226,7 @@ export default function App() {
   const tarotReading = [...readings].reverse().find((r) => r.kind === "tarot");
   const physioReading = [...readings].reverse().find((r) => r.kind === "physio");
   const acuReading = [...readings].reverse().find((r) => r.kind === "acu");
+  const rippleReading = [...readings].reverse().find((r) => r.kind === "ripple");
   const recent = checkins.slice(-8, todayCheckin ? -1 : undefined);
   const todayDiaryCount = diary.filter((d) => d.date === today).length;
   const todayQuote = quoteById(quotes.picks.find((p) => p.date === today)?.id ?? "");
@@ -259,7 +261,7 @@ export default function App() {
         ) : (
           <>
             <nav className="tabs">
-              {(["today", "charts", "dharma", "tarot", "physio", "acu", "progress", "library", "journal", "profile"] as const).map((t) => (
+              {(["today", "charts", "dharma", "tarot", "physio", "acu", "ripple", "progress", "library", "journal", "profile"] as const).map((t) => (
                 <button key={t} className={tab === t ? "on" : ""} onClick={() => setTab(t)}>
                   {UI[TAB_LABEL[t]][lang]}
                   {streamingTabs.includes(t) && <span className="live-dot" aria-label={UI.libWriting[lang]} />}
@@ -386,6 +388,17 @@ export default function App() {
                 <Suspense fallback={<p className="muted center">✦</p>}>
                   <Acupressure reading={acuReading} today={today} />
                 </Suspense>
+              )}
+              {tab === "ripple" && snapshot && (
+                <Ripple
+                  reading={rippleReading}
+                  today={today}
+                  diary={diary}
+                  checkin={todayCheckin}
+                  contextFor={() =>
+                    buildContextFor("full", { diary, meditations, profile, snapshot, cosmos, env, allCheckins: checkins, checkin: todayCheckin, recent, today })
+                  }
+                />
               )}
               {tab === "progress" && (
                 <Progress profile={profile} checkins={checkins} diary={diary} meditations={meditations} readings={readings} today={today} />

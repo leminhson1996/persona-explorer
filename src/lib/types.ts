@@ -2,6 +2,7 @@ import type { Lang } from "./i18n";
 import type { TarotDraw } from "./tarot";
 import type { PhysioRecord } from "./physiognomy";
 import type { VoiceMetrics } from "./voice";
+import type { RippleGraph } from "./ripple";
 
 export interface Place {
   lat: number;
@@ -115,7 +116,7 @@ export interface ChatMsg {
   imageCount?: number; // how many photos were attached (kept after the images are stripped)
 }
 
-export type ReadingKind = "daily" | "chart" | "dharma" | "tarot" | "progress" | "physio" | "acu";
+export type ReadingKind = "daily" | "chart" | "dharma" | "tarot" | "progress" | "physio" | "acu" | "ripple";
 /** What a reading was allowed to see: everything, the profile only, or just the birth data. */
 export type ContextScope = "full" | "profile" | "birth" | "cards";
 
@@ -128,6 +129,7 @@ export interface Reading {
   scope?: ContextScope; // missing = full
   tarot?: TarotDraw; // the question and cards, for tarot readings
   physio?: PhysioRecord; // measurements (and optional thumbnails) for face/hand readings // "streaming" left over after a reload means it was cut off
+  ripple?: RippleGraph; // the causal map drawn for a seed thought or action
   /** Full API conversation; messages[0] is the auto-generated request and isn't shown. */
   messages: ChatMsg[];
 }

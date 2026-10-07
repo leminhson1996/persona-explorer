@@ -4,6 +4,7 @@ import { fmt, useT, type Bi } from "../lib/i18n";
 import { useSessions, type Session } from "../lib/guideStore";
 import type { Reading, ReadingKind } from "../lib/types";
 import { spreadById } from "../lib/tarot";
+import { parseRipple } from "../lib/ripple";
 import { CardFace } from "./Tarot";
 
 export const KIND_META: Record<ReadingKind, { icon: string; label: Bi; cls: string }> = {
@@ -14,15 +15,19 @@ export const KIND_META: Record<ReadingKind, { icon: string; label: Bi; cls: stri
   progress: { icon: "📈", label: { en: "Growth review", vi: "Tổng kết" }, cls: "k-progress" },
   physio: { icon: "👤", label: { en: "Face & palm", vi: "Nhân tướng" }, cls: "k-physio" },
   acu: { icon: "🖐", label: { en: "Acupressure", vi: "Bấm huyệt" }, cls: "k-acu" },
+  ripple: { icon: "🌊", label: { en: "Ripples", vi: "Duyên khởi" }, cls: "k-ripple" },
 };
 
 const kindOf = (r: Reading): ReadingKind => r.kind ?? "daily";
 const fold = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/gi, "d").toLowerCase();
+/** A ripple answer carries its map as a data block; the library shows only the writing. */
+const readable = (r: Reading, text: string) => (kindOf(r) === "ripple" ? parseRipple(text).prose : text);
+
 const plain = (md: string) => md.replace(/[#*_>`~-]+/g, " ").replace(/\s+/g, " ").trim();
 
 /** First real sentence of the first answer (skipping headings), for the list preview. */
 function snippet(r: Reading): string {
-  const answer = r.messages.find((m) => m.role === "assistant")?.content ?? "";
+  const answer = readable(r, r.messages.find((m) => m.role === "assistant")?.content ?? "");
   const para = answer.split("\n").map((l) => l.trim()).find((l) => l && !l.startsWith("#")) ?? answer;
   const text = plain(para);
   return text.length > 160 ? `${text.slice(0, 160)}…` : text;
@@ -31,7 +36,7 @@ function snippet(r: Reading): string {
 const followUps = (r: Reading) => r.messages.slice(1).filter((m) => m.role === "user").map((m) => m.content);
 
 function toMarkdown(r: Reading, title: string, when: string, youLabel: string): string {
-  const body = r.messages.slice(1).map((m) => (m.role === "assistant" ? m.content : `> **${youLabel}:** ${m.content}`));
+  const body = r.messages.slice(1).map((m) => (m.role === "assistant" ? readable(r, m.content) : `> **${youLabel}:** ${m.content}`));
   return `# ${title}\n\n_${when}_\n\n${body.join("\n\n---\n\n")}\n`;
 }
 
@@ -64,7 +69,7 @@ export default function Library({ readings: savedReadings, onDelete, onContinue 
 
   const sorted = useMemo(() => [...readings].sort((a, b) => b.createdAt.localeCompare(a.createdAt)), [readings]);
   const counts = useMemo(() => {
-    const c: Record<ReadingKind | "all", number> = { all: readings.length, daily: 0, chart: 0, dharma: 0, tarot: 0, progress: 0, physio: 0, acu: 0 };
+    const c: Record<ReadingKind | "all", number> = { all: readings.length, daily: 0, chart: 0, dharma: 0, tarot: 0, progress: 0, physio: 0, acu: 0, ripple: 0 };
     readings.forEach((r) => c[kindOf(r)]++);
     return c;
   }, [readings]);
@@ -213,7 +218,7 @@ export default function Library({ readings: savedReadings, onDelete, onContinue 
             <div className="thread">
               {selected.messages.slice(1).map((m, i) =>
                 m.role === "assistant" ? (
-                  <article key={i} className="msg guide"><ReactMarkdown>{m.content}</ReactMarkdown></article>
+                  <article key={i} className="msg guide"><ReactMarkdown>{readable(selected, m.content)}</ReactMarkdown></article>
                 ) : (
                   <p key={i} className="msg me"><span className="who">{t("you")}</span>{m.content}</p>
                 ),

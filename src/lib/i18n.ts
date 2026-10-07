@@ -28,6 +28,7 @@ export const UI = {
   tabProgress: bi("Progress", "Tổng hợp"),
   tabPhysio: bi("Face & palm", "Nhân tướng"),
   tabAcu: bi("Acupressure", "Bấm huyệt"),
+  tabRipple: bi("Ripples", "Duyên khởi"),
 
   // Profile
   profileTitle: bi("Your profile", "Hồ sơ của bạn"),

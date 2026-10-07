@@ -649,3 +649,104 @@ button:disabled { opacity: 0.5; cursor: default; }
 .acu-guides { display: grid; gap: 8px; }
 .acu-guides summary { cursor: pointer; font-weight: 600; }
 .acu-current { margin-top: 12px; }
+
+/* ---------- Duyên khởi: the ripple map ---------- */
+
+:root {
+  --sp-body: #ff9f8f; --sp-mind: #c9a8ff; --sp-near: #ffb3d1;
+  --sp-work: #ffd166; --sp-society: #7fc8ff; --sp-nature: #7fdcb0;
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    --sp-body: #c7503c; --sp-mind: #7b4fd6; --sp-near: #c0397c;
+    --sp-work: #a06a00; --sp-society: #1565b8; --sp-nature: #1f8a5b;
+  }
+}
+
+.ripple-form { display: grid; gap: 8px; margin: 10px 0; }
+.ripple-form .primary { justify-self: start; }
+.ripple-seeds { display: grid; gap: 6px; margin-top: 6px; }
+.ripple-seeds .chip { text-align: left; white-space: normal; }
+
+.ripple-seed-text { font: 1.15rem/1.5 var(--serif); color: var(--accent); margin: 0 0 14px; }
+.ripple-dir + .ripple-dir { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--card-border); }
+.ripple-dir h3 { margin: 0 0 10px; font-size: 1rem; }
+/* What gave rise to the seed sits quieter than what it ripples into: roots, not waves. */
+.ripple-upstream { opacity: 0.88; }
+.ripple-ring { margin-bottom: 12px; }
+.ripple-ring > .eyebrow { display: block; margin-bottom: 5px; }
+.ripple-ring ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+
+.ripple-node {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 10px;
+  align-items: start;
+  padding: 9px 12px;
+  border-radius: 12px;
+  background: var(--field);
+  border: 1px solid var(--field-border);
+  border-left: 4px solid var(--muted);
+}
+.ripple-node.lever { background: color-mix(in srgb, var(--accent) 10%, var(--field)); }
+.ripple-sphere { font-size: 1.05rem; line-height: 1.4; }
+.ripple-text { line-height: 1.5; }
+.ripple-tags, .ripple-acts { grid-column: 2; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.ripple-tags { margin-top: 2px; }
+.ripple-tags .pill { font-size: 0.74rem; padding: 2px 9px; }
+.ripple-tags .pill.lever { background: color-mix(in srgb, var(--accent) 24%, transparent); color: var(--text); }
+.ripple-acts { margin-top: 6px; }
+.ripple-acts .ghost { padding: 3px 10px; font-size: 0.76rem; }
+.ripple-acts .ghost.on { background: color-mix(in srgb, var(--accent) 22%, transparent); border-color: var(--accent); }
+
+/* The map itself: a stone dropped in water, drawn in SVG. */
+.ripple-head { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; justify-content: space-between; }
+.ripple-head .ripple-seed-text { margin-bottom: 8px; }
+.ripple-map-wrap { margin: 4px auto 10px; max-width: 660px; }
+.ripple-svg { width: 100%; height: auto; display: block; overflow: visible; touch-action: manipulation; }
+
+.ripple-ring-line { fill: none; stroke: var(--card-border); stroke-width: 1; }
+.ripple-horizon { stroke: var(--card-border); stroke-width: 1; stroke-dasharray: 2 6; }
+.ripple-rim text { font-size: 15px; fill: currentColor; }
+.ripple-ring-label text { font-size: 9px; fill: var(--muted); opacity: 0.7; letter-spacing: 0.04em; paint-order: stroke; stroke: var(--bg); stroke-width: 3px; stroke-linejoin: round; }
+
+.ripple-seed-glow { pointer-events: none; }
+.ripple-seed-dot { fill: var(--accent); }
+
+.ripple-edge { fill: none; stroke-width: 1.5; stroke-linecap: round; }
+.ripple-loop { fill: none; stroke: var(--accent); stroke-width: 1; stroke-dasharray: 3 5; opacity: 0.5; }
+
+.ripple-dot { cursor: pointer; }
+.ripple-dot-core { stroke-width: 2; transition: r 120ms ease; }
+.ripple-lever-halo { fill: none; stroke: var(--accent); stroke-width: 1.5; opacity: 0.75; }
+.ripple-seen { fill: none; stroke: var(--good); stroke-width: 1.5; }
+.ripple-dot.sel .ripple-dot-core { r: 9; }
+.ripple-dot:focus-visible { outline: none; }
+.ripple-dot:focus-visible .ripple-dot-core { stroke: var(--text); }
+
+/* Labels would crowd the map, so only the ones worth reading stay up. */
+.ripple-dot-label { font-size: 10px; fill: var(--text); opacity: 0; pointer-events: none; transition: opacity 120ms ease; paint-order: stroke; stroke: var(--bg); stroke-width: 3px; stroke-linejoin: round; }
+.ripple-dot:hover .ripple-dot-label,
+.ripple-dot:focus-visible .ripple-dot-label,
+.ripple-dot.sel .ripple-dot-label { opacity: 1; }
+
+/* Choosing a point quiets everything that isn't on its thread. */
+.ripple-dot.dim, .ripple-edge.dim, .ripple-loop.dim { opacity: 0.12 !important; }
+.ripple-dot.dim .ripple-dot-label { opacity: 0; }
+
+.ripple-chosen { margin-top: 10px; }
+.ripple-chosen .eyebrow { margin-bottom: 5px; }
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Each new point arrives as the answer is written. The scale goes on the inner circle:
+     a CSS transform on the group would replace its transform attribute and drop it on the centre. */
+  .ripple-dot, .ripple-edge { animation: ripple-fade 460ms ease-out backwards; }
+  .ripple-dot-core { animation: ripple-pop 460ms ease-out backwards; }
+}
+@keyframes ripple-fade { from { opacity: 0; } }
+@keyframes ripple-pop { from { transform: scale(0.3); } }
+
+@media (max-width: 560px) {
+  .ripple-dot-label { font-size: 13px; }
+  .ripple-ring-label text { font-size: 11px; }
+}

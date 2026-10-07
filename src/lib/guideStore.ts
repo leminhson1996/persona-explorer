@@ -5,6 +5,7 @@ import { uid } from "./storage";
 import type { ChatMsg, ContextScope, Reading, ReadingKind } from "./types";
 import type { TarotDraw } from "./tarot";
 import type { PhysioRecord } from "./physiognomy";
+import type { RippleGraph } from "./ripple";
 
 export interface Session {
   kind: ReadingKind;
@@ -19,6 +20,7 @@ export interface Session {
   contextScope: ContextScope; // fixed for the whole conversation, so follow-ups see the same context
   tarot?: TarotDraw;
   physio?: PhysioRecord;
+  ripple?: RippleGraph;
 }
 
 type State = Partial<Record<ReadingKind, Session>>;
@@ -40,7 +42,7 @@ const stripImages = (messages: ChatMsg[]): ChatMsg[] =>
   messages.map(({ images, ...m }) => (images?.length ? { ...m, imageCount: images.length } : m));
 
 function persist(s: Session, messages: ChatMsg[], status: Reading["status"]) {
-  saver({ id: s.readingId, date: s.date, createdAt: s.createdAt, kind: s.kind, messages: stripImages(messages), status, ...(s.contextScope !== "full" ? { scope: s.contextScope } : {}), ...(s.tarot ? { tarot: s.tarot } : {}), ...(s.physio ? { physio: s.physio } : {}) });
+  saver({ id: s.readingId, date: s.date, createdAt: s.createdAt, kind: s.kind, messages: stripImages(messages), status, ...(s.contextScope !== "full" ? { scope: s.contextScope } : {}), ...(s.tarot ? { tarot: s.tarot } : {}), ...(s.physio ? { physio: s.physio } : {}), ...(s.ripple ? { ripple: s.ripple } : {}) });
 }
 
 export const guide = {
@@ -72,6 +74,7 @@ export const guide = {
         contextScope: saved?.scope ?? "full",
         tarot: saved?.tarot,
         physio: saved?.physio,
+        ripple: saved?.ripple,
       },
     };
     listeners.forEach((l) => l());
@@ -81,7 +84,19 @@ export const guide = {
   restart(kind: ReadingKind, date: string, scope: ContextScope = "full", tarot?: TarotDraw, physio?: PhysioRecord) {
     const s = state[kind];
     if (!s || s.pending !== null) return;
-    update(kind, { readingId: uid(), createdAt: new Date().toISOString(), date, messages: [], error: null, contextScope: scope, tarot, physio });
+    update(kind, { readingId: uid(), createdAt: new Date().toISOString(), date, messages: [], error: null, contextScope: scope, tarot, physio, ripple: undefined });
+  },
+
+  /**
+   * The causal map parsed out of a ripple answer, kept beside the conversation so notes added to it
+   * later survive. While the answer is still streaming the stream's own save picks it up.
+   */
+  setRipple(kind: ReadingKind, ripple: RippleGraph) {
+    const s = state[kind];
+    if (!s) return;
+    update(kind, { ripple });
+    // Nothing to persist until the conversation exists; while streaming, the stream's own save takes it.
+    if (s.pending === null && s.messages.length) persist({ ...s, ripple }, s.messages, "done");
   },
 
   clearRetry(kind: ReadingKind) {
